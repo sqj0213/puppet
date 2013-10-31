@@ -1,0 +1,118 @@
+
+backend backend_img_old
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    option httpchk HEAD /lost.gif HTTP/1.1\r\nHost:p1.gexing.com\r\n Referer:http://www.gexing.com
+    server  172.16.2.21:8003  172.16.2.21:8003 id 03 cookie img_old03 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.2.22:8003  172.16.2.22:8003 id 04 cookie img_old04 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_img_new_thumb
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    uri
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    option httpchk HEAD /lost.gif HTTP/1.1\r\nHost:p1.gexing.com\r\n Referer:http://www.gexing.com
+    server  172.16.2.21:8001    172.16.2.21:8001 id 01 cookie img_thumb01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.2.22:8001    172.16.2.22:8001 id 02 cookie img_thumb02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_img_new
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    #option httpchk HEAD /lost.gif HTTP/1.1\r\nHost:p1.gexing.com\r\n Referer:http://www.gexing.com
+    option httpchk HEAD /nginx_status
+    server  172.16.2.19:80    172.16.2.19:80 id 01 cookie img_new_01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.2.20:80    172.16.2.20:80 id 02 cookie img_new_02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_pic_z
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    source
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    option httpchk HEAD /nginx_status
+    server  172.16.2.23:80    172.16.2.23:80 id 01 cookie pic_z01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.2.24:80    172.16.2.24:80 id 02 cookie pic_z02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+
+backend backend_www
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.1.17:80     172.16.1.17:80 id 03 cookie s03 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 20
+    server  172.16.1.18:80     172.16.1.18:80 id 04 cookie s04 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+#backend backend_audio
+    #mode       http
+    #contimeout 5000
+    #srvtimeout 50000
+    #balance    roundrobin
+    #hash-type  consistent
+    #option http-pretend-keepalive
+    #option srvtcpka
+    #option httpchk HEAD /pmping
+    #server  172.16.2.19:80    172.16.2.19:80 id 01 cookie aud_new_01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    #server  172.16.2.20:80    172.16.2.20:80 id 02 cookie aud_new_02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+#
+#backend backend_count
+#    mode       http
+#    contimeout 5000
+#    srvtimeout 50000
+#    balance    roundrobin
+#    hash-type  consistent
+#    option httpchk HEAD /pmping 
+#
+#    #server  172.16.1.2:88    172.16.1.2:88 id 01 cookie c01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    #server  172.16.1.3:88    172.16.1.3:88 id 02 cookie c02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.1.17:80     172.16.1.17:80 id 03 cookie c03 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.1.18:80     172.16.1.18:80 id 04 cookie c04 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#
+#
+#backend backend_mobile
+#    mode       http
+#    contimeout 5000
+#    srvtimeout 50000
+#    balance    roundrobin
+#    hash-type  consistent
+#    option httpchk HEAD /pmping
+#    server  172.16.1.17:80     172.16.1.17:80 id 01 cookie wap01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.1.18:80     172.16.1.18:80 id 02 cookie wap02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#
+#backend backend_search
+#    mode       http
+#    contimeout 5000
+#    srvtimeout 50000
+#    balance    roundrobin
+#    hash-type  consistent
+#    option httpchk HEAD /pmping
+#    server  172.16.1.17:80     172.16.1.17:80 id 01 cookie c01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.1.18:80     172.16.1.18:80 id 02 cookie c02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#
+#backend backend_pp_api
+#    mode       http
+#    contimeout 5001
+#    srvtimeout 50000
+#    balance    roundrobin
+#    hash-type  consistent
+#    option httpchk HEAD /pmping
+#    server  172.16.1.17:80     172.16.1.17:80 id 01 cookie pp01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.1.18:80     172.16.1.18:80 id 02 cookie pp02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#

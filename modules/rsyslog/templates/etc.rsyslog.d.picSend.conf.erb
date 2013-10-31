@@ -1,0 +1,250 @@
+#global variable
+$InputFilePollInterval 5
+
+#p1.gexing.com文件input模块配置
+$InputFileName /data/www/logs/p1.gexing.com-access.log
+$InputFileTag nginx-p1-access:
+$InputFileStateFile p1.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#p1.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/p1.gexing.com-error.log
+$InputFileTag nginx-p1-error:
+$InputFileStateFile p1.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#pic.upload.z.gexing.com文件input模块配置
+$InputFileName /data/www/logs/pic.upload.z.gexing.com-access.log
+$InputFileTag nginx-pic-upload-z-access:
+$InputFileStateFile pic.upload.z.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#pic.upload.z.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/pic.upload.z.gexing.com-error.log
+$InputFileTag nginx-pic-upload-z-error:
+$InputFileStateFile pic.upload.z.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#pic.tmp.z.gexing.com文件input模块配置
+$InputFileName /data/www/logs/pic.tmp.z.gexing.com-access.log
+$InputFileTag nginx-pic-tmp-z-access:
+$InputFileStateFile pic.tmp.z.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#pic.tmp.z.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/pic.tmp.z.gexing.com-error.log
+$InputFileTag nginx-pic-tmp-z-error:
+$InputFileStateFile pic.tmp.z.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#photo.gexing.com文件input模块配置
+$InputFileName /data/www/logs/photo.gexing.com-access.log
+$InputFileTag nginx-photo-access:
+$InputFileStateFile photo.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#photo.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/photo.gexing.com-error.log
+$InputFileTag nginx-photo-error:
+$InputFileStateFile photo.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#cache.photo.gexing.com文件input模块配置
+$InputFileName /data/www/logs/cache.photo.gexing.com-access.log
+$InputFileTag nginx-cache-photo-access:
+$InputFileStateFile cache.photo.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#cache.photo.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/cache.photo.gexing.com-error.log
+$InputFileTag nginx-cache-photo-error:
+$InputFileStateFile cache.photo.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#upload.qingguo.com-access.log模块配置
+$InputFileName /data/www/logs/upload.qingguo.com-access.log
+$InputFileTag upload.qingguo.com-access:
+$InputFileStateFile upload.qingguo.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#upload.qingguo.com-error.log模块配置
+$InputFileName /data/www/logs/upload.qingguo.com-error.log
+$InputFileTag upload.qingguo.com-error:
+$InputFileStateFile upload.qingguo.com-error.log.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#upload.tmp.qingguo.com-access.log模块配置
+$InputFileName /data/www/logs/upload.tmp.qingguo.com-access.log
+$InputFileTag upload.tmp.qingguo.com-access:
+$InputFileStateFile upload.tmp.qingguo.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#upload.tmp.qingguo.com-error.log模块配置
+$InputFileName /data/www/logs/upload.tmp.qingguo.com-error.log
+$InputFileTag upload.tmp.qingguo.com-error:
+$InputFileStateFile upload.tmp.qingguo.com-error.log.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#pic-php-fpm-error文件input模块配置
+$InputFileName /data/www/logs/php-fpm-error.log
+$InputFileTag pic-php-fpm-error:
+$InputFileStateFile php-fpm-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#pic-php-fpm-slow文件input模块配置
+$InputFileName /data/www/logs/php-fpm-slow.log
+$InputFileTag pic-php-fpm-slow:
+$InputFileStateFile php-fpm-slow.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#pic-php-fpm-www-error文件input模块配置
+$InputFileName /data/www/logs/php-fpm-www-error.log
+$InputFileTag pic-php-fpm-www-error:
+$InputFileStateFile php-fpm-www-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#messages文件input模块配置
+$InputFileName /var/log/messages
+$InputFileTag pic-messages:
+$InputFileStateFile messages.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#syslog 转发到relay机器进行邮件与短信提醒
+$ActionQueueFileName acQpic
+$ActionQueueMaxDiskSpace 200G
+$ActionQueueSaveOnShutdown on
+$ActionQueueMaxFileSize 512M
+$ActionQueueType LinkedList
+$ActionResumeRetryCount -1
+#$ActionQueueDiscardMark 1500000
+#$ActionQueueQueueDiscardSeverity 3
+$ActionQueueHighWatermark 3000
+$ActionQueueLowWatermark 1000
+$ActionQueueTimeoutEnqueue 200
+$ActionDequeueBatchSize 200
+
+#却除nginx里含有200状态码的日志filter配置
+if ($programname == 'nginx-p1-access' or $programname == 'nginx-pic-upload-z-access' or $programname == 'nginx-pic-tmp-z-access' or $programname == 'nginx-photo-access' or $programname == 'nginx-cache-photo-access' or $programname == 'upload.qingguo.com-access' or $programname == 'upload.tmp.qingguo.com-access') and ($msg contains '  rc:200  ') then ~
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-p1-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-p1-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-pic-upload-z-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-pic-upload-z-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-pic-tmp-z-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-pic-tmp-z-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-photo-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-photo-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-cache-photo-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'nginx-cache-photo-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'pic-php-fpm-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'pic-php-fpm-slow'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'pic-php-fpm-www-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'pic-upload-server'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'pic-messages'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'upload.qingguo.com-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'upload.qingguo.com-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'upload.tmp.qingguo.com-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'upload.tmp.qingguo.com-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}

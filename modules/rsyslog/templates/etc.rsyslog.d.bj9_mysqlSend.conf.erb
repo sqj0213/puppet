@@ -1,0 +1,130 @@
+#global variable
+$InputFilePollInterval 5
+
+#mysql-slave-error-3306文件input模块配置
+$InputFileName /data/mysql_3306/data/virgo-bj9.internal.gexing.com.err
+$InputFileTag mysql-slave-error-3306:
+$InputFileStateFile mysql-slave-error-3306.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-slave-slow-3306文件input模块配置
+$InputFileName /data/mysql_3306/data/virgo-bj9-slow.log
+$InputFileTag mysql-slave-slow-3306:
+$InputFileStateFile mysql-slave-slow-3306.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-master-error-3307文件input模块配置
+$InputFileName /data/mysql_3307/data/virgo-bj9.internal.gexing.com.err
+$InputFileTag mysql-master-error-3307:
+$InputFileStateFile mysql-master-error-3307.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-master-slow-3307文件input模块配置
+$InputFileName /data/mysql_3307/data/virgo-bj9-slow.log
+$InputFileTag mysql-master-slow-3307:
+$InputFileStateFile mysql-master-slow-3307.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-master-error-3311文件input模块配置
+$InputFileName /data/mysql_3311/data/virgo-bj9.internal.gexing.com.err
+$InputFileTag mysql-master-error-3311:
+$InputFileStateFile mysql-master-error-3311.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-master-slow-3311文件input模块配置
+$InputFileName /data/mysql_3311/data/virgo-bj9-slow.log
+$InputFileTag mysql-master-slow-3311:
+$InputFileStateFile mysql-master-slow-3311.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-slave-error-3312文件input模块配置
+$InputFileName /data/mysql_3312/data/virgo-bj9.internal.gexing.com.err
+$InputFileTag mysql-slave-error-3312:
+$InputFileStateFile mysql-slave-error-3312.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-slave-slow-3312文件input模块配置
+$InputFileName /data/mysql_3312/data/virgo-bj9-slow.log
+$InputFileTag mysql-slave-slow-3312:
+$InputFileStateFile mysql-slave-slow-3312.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#mysql-messages文件input模块配置
+$InputFileName /var/log/messages
+$InputFileTag mysql-messages:
+$InputFileStateFile messages.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#syslog 转发到relay机器进行邮件与短信提醒
+$ActionQueueFileName acQmysql
+$ActionQueueMaxDiskSpace 200G
+$ActionQueueSaveOnShutdown on
+$ActionQueueMaxFileSize 512M
+$ActionQueueType LinkedList
+$ActionResumeRetryCount -1
+#$ActionQueueDiscardMark 1500000
+#$ActionQueueQueueDiscardSeverity 3
+$ActionQueueHighWatermark 3000
+$ActionQueueLowWatermark 1000
+$ActionQueueTimeoutEnqueue 200
+$ActionDequeueBatchSize 200
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-slave-error-3306'  then
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-slave-slow-3306'  then 
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-master-error-3307'  then
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-master-slow-3307'  then
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-master-error-3311'  then
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-master-slow-3311'  then
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-slave-error-3312'  then
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-slave-slow-3312'  then
+{
+	@@172.16.1.14:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'mysql-messages'  then @@172.16.1.14:10514

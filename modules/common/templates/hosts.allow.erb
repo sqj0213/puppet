@@ -1,0 +1,21 @@
+#
+# hosts.allow	This file contains access rules which are used to
+#		allow or deny connections to network services that
+#		either use the tcp_wrappers library or that have been
+#		started through a tcp_wrappers-enabled xinetd.
+#
+#		See 'man 5 hosts_options' and 'man 5 hosts_access'
+#		for information on rule syntax.
+#		See 'man tcpd' for information on tcp_wrappers
+#
+<% if hostname == "leo-hz2" or hostname == "leo-ts2" -%>
+#公司ip：124.205.20.169 124.205.20.170 124.205.20.171 124.205.20.174
+#西单机房ip：211.154.255.103 211.154.219.70
+#北京、湖州、唐山ip段：123.103.21.128/255.255.255.224 122.225.115.192/255.255.255.224 60.2.235.64/255.255.255.240
+sshd: 211.154.219.70 172.16.0.0/255.255.0.0 124.205.20.169 124.205.20.170 124.205.20.171 124.205.20.174 123.103.21.128/255.255.255.224 122.225.115.192/255.255.255.224 60.2.235.64/255.255.255.240 211.154.255.96/255.255.255.224 59.108.82.16/255.255.255.240 122.224.4.239 42.121.116.141
+<% elsif hostname == "leo-hz3" or hostname == "leo-ts3" or hostname == "leo-ts11" or hostname == "leo-hz14" or hostname == "leo-hz15" or hostname == "leo-hz18" or hostname == "leo-hz19" or hostname == "leo-bj21" or hostname == "leo-bj22" or hostname == "libra-bj13" or hostname == "taurus-bj11" or hostname == "taurus-bj10" -%>
+#公司ip：124.205.20.169 124.205.20.170 124.205.20.171 124.205.20.174
+#西单机房ip：211.154.255.103 211.154.219.70
+#北京、湖州、唐山ip段：123.103.21.128/255.255.255.224 122.225.115.192/255.255.255.224 60.2.235.64/255.255.255.240
+sshd:172.16.0.0/255.255.0.0 123.103.21.128/255.255.255.224 122.225.115.192/255.255.255.224 60.2.235.64/255.255.255.240
+<% end -%>

@@ -1,0 +1,205 @@
+probe healthcheck {
+   .request =
+"HEAD /touxiang/20120907/1316/50498346c817d_100x100.jpg HTTP/1.1"
+"Host: p1.gexing.com"
+"Referer: http://www.gexing.com";
+   .interval = 60s;
+   .timeout = 3 s;
+   .window = 8;
+   .threshold = 3;
+   .initial = 3;
+   .expected_response = 200;
+}
+<%# if backend_servers  %>
+
+backend gximg1 {
+        #.host = "172.16.3.10";
+        .host = "<%= backend_ip_1 %>";
+        .port = "<%= backend_port_1 %>";
+        .connect_timeout = 600s;
+        .first_byte_timeout = 600s;
+        .between_bytes_timeout = 600s;
+	.probe = healthcheck;
+}
+
+backend gximg2 {
+        #.host = "172.16.3.11";
+        .host = "<%= backend_ip_2 %>";
+        .port = "<%= backend_port_2 %>";
+        .connect_timeout = 600s;
+        .first_byte_timeout = 600s;
+        .between_bytes_timeout = 600s;
+	.probe = healthcheck;
+
+}
+
+
+director gximg round-robin{
+        { .backend = gximg1; }
+        { .backend = gximg2; }
+}
+
+acl mynet {
+        "localhost";
+        "127.0.0.1";
+        "124.205.20.168"/29;
+}
+
+acl purge {
+        "localhost";
+        "127.0.0.1";
+        "124.205.20.168"/29;
+        "123.103.21.0"/24;
+}
+
+
+sub vcl_recv {
+	set req.grace = 30s;
+
+      	if(req.url ~ "(lost\.gif|referer_error\.png)$"){
+        	return(lookup);
+       	}
+
+
+       	if (req.http.x-forwarded-for ~ "124\.205\.20\.1" || client.ip ~ mynet) {
+       		return (lookup);
+       	}
+
+        if (req.http.host !~ "(a1|a2|a3|a4|p1|p2|p3|p4|jic)\.(gexing|qqhot)\.com$") {
+        	error 403 "Unknown host";
+        }
+
+        if (req.http.referer !~ "(1dui1|duoxue|duowen|gexing|xinqing|qq|weibo|pengyou|sohu|163|sina|baidu|soso|sogou|360|qqhot|qqmcc)\.(com|cn)") {
+		#防盗链的图片需要重新设计，不能使用 lost.gif
+		set req.http.Location = "http://p1.gexing.com/referer_error.png";
+                error 750 "Moved Temporarily";
+        }
+
+
+        # Handle special requests
+        if (req.request != "GET" && req.request != "HEAD") {
+
+                # POST - Logins and edits
+                if (req.request == "POST") {
+                        return(pass);
+                }
+                
+                # PURGE - The CacheFu product can invalidate updated URLs
+                if (req.request == "PURGE") {
+                        if (!client.ip ~ purge) {
+                                error 405 "Not allowed.";
+                        }
+                        return(lookup);
+                }
+
+                if (req.request == "BAN") {
+                	ban("obj.http.x-url ~ " + req.http.x-ban-url + 
+                     " && obj.http.x-host ~ " + req.http.x-ban-host);
+                 	error 200 "Banned";
+                }
+                if (req.request == "REFRESH") {
+                 	set req.request = "GET";
+                 	set req.hash_always_miss = true;
+                }
+
+        }
+
+        if (req.url ~ "\.(js|css|xml|txt|png|gif|jpg|jpeg|bmp|ico|zip|pdf|swf|mp3)$") {
+                  unset req.http.cookie;
+                  #remove req.http.cookie;
+                  set req.backend = gximg;
+                  return(lookup);
+        }
+        return(pass);
+
+}
+
+
+sub vcl_hash {
+    hash_data(req.url);
+    if (req.http.host) {
+        hash_data(req.http.host);
+    } else {
+        hash_data(server.ip);
+    }
+    return (hash);
+}
+
+# Do the PURGE thing
+sub vcl_hit {
+        if (req.request == "PURGE") {
+                purge;
+                error 200 "Purged";
+        }
+        return(deliver);
+}
+sub vcl_miss {
+        if (req.request == "PURGE") {
+                purge;
+                error 404 "Not in cache";
+        }
+        return(fetch);
+}
+
+sub vcl_pipe {
+        return(pipe);
+}
+
+sub vcl_error{
+	if (obj.status == 750) {
+                set obj.http.Location = req.http.Location;
+                set obj.status = 302;
+                return(deliver);
+        }
+}
+
+# Enforce a minimum TTL, since we can PURGE changed objects actively
+# from Zope by using the CacheFu product
+
+sub vcl_fetch {
+	#set obj.grace = 30s;
+
+
+        if (req.url ~ "\.(png|gif|jpg|jpeg|bmp|zip|txt|pdf|swf|spx|mp3)$") {
+          unset beresp.http.set-cookie;
+          set beresp.ttl = 100d;
+          set beresp.http.x-url = req.url;
+          set beresp.http.x-host = req.http.host;
+        }
+
+        if (req.url ~ "\.(css|js|xml|html|htm|txt)$") {
+         unset beresp.http.set-cookie;
+         set beresp.ttl = 3h;
+         set beresp.http.x-url = req.url;
+         set beresp.http.x-host = req.http.host;
+        }
+
+
+        #if (obj.status == 404 || obj.status == 503 || obj.status == 500) {
+        #if (beresp.status == 403 || beresp.status == 404 || beresp.status == 302 || beresp.status == 500 || beresp.status == 502 || beresp.status == 503 || beresp.status == 504 ) {
+	if (beresp.status > 300){
+          set beresp.http.Cache-Control = "max-age=0";
+          set beresp.ttl = 0s;
+        }
+
+}
+
+sub vcl_pass {
+        if (req.request == "PURGE") {
+                error 502 "PURGE on a passed object";
+        }
+	return(pass);
+}
+
+sub vcl_deliver {
+
+     unset resp.http.x-url;
+     unset resp.http.x-host;
+
+     if (obj.hits > 0) {
+      set resp.http.X-Cache = "HIT from <%= hostname %>:<%= port %>";
+     } else {
+      set resp.http.X-Cache = "MISS from <%= hostname %>:<%= port%>";
+     }
+      return (deliver);
+}

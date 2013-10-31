@@ -1,0 +1,135 @@
+#!/bin/sh
+
+PROGNAME=`basename $0`
+VERSION="Version 1.1"
+AUTHOR="zhhmj (tgavriltg@gmail.com)"
+
+#DEFINES
+ST_OK=0
+ST_WR=1
+ST_CR=2
+ST_UK=3
+#VARS
+part="/dev/shm"
+warn=80
+crit=90
+min=120
+zmin=30
+
+print_version() {
+        echo "$PROGNAME $VERSION BY $AUTHOR"
+}
+
+del_shm() {
+        if [ -d /dev/shm/itmp ]; then
+		/bin/find /dev/shm/itmp -cmin +$min -type f | /bin/grep -v crossdomain.xml | awk '{print "/bin/rm -rf \""$0"\""}' | /bin/sh
+		/bin/find /dev/shm/itmp/ -type d -empty | awk '{print "/bin/rmdir -p --ignore-fail-on-non-empty \""$0"\""}' | /bin/sh
+                echo "`date`: /bin/rm -r /dev/shm/itmp/" >> /var/log/rm_shm
+        fi
+        if [ -d /dev/shm/imggx ]; then
+                echo "`date`: /bin/rm -r /dev/shm/imggx/" >> /var/log/rm_shm
+        fi
+        if [ -d /dev/shm/fcgi_cache ]; then
+		/bin/find /dev/shm/fcgi_cache -cmin +$min -type f -exec rm -r {} \;
+                echo "`date`: /bin/rm -r /dev/shm/fcgi_cache/" >> /var/log/rm_shm
+        fi
+        if [ -d /dev/shm/itmp/G1 ] && [ -d /dev/shm/itmp/S1 ] && [ -d /dev/shm/itmp/i.cache ]; then
+                /bin/find /dev/shm/itmp/G1 -cmin +$zmin -type f | /bin/grep -v crossdomain.xml | /usr/bin/xargs /bin/rm -r
+                /bin/find /dev/shm/itmp/S1 -cmin +$zmin -type f | /bin/grep -v crossdomain.xml | /usr/bin/xargs /bin/rm -r
+                /bin/find /dev/shm/itmp/i.cache -cmin +$zmin -type f | /bin/grep -v crossdomain.xml | /usr/bin/xargs /bin/rm -r
+                echo "`date`: /bin/rm -r /dev/shm/itmp/G1 /dev/shm/itmp/S1 /dev/shm/i.cache" >> /var/log/rm_shm
+        fi
+}
+
+print_help() {
+        print_version
+        echo ""
+        echo "Description:"
+        echo "This script detect partition used"
+        echo "Options:"
+        echo "  -p|--part)"
+        echo "   Sets the partiton, default is /dev/shm"
+        echo "  -w)"
+        echo "   Sets the partition utilization rate to warn at, default 90"
+        echo "  -c)"
+        echo "   Sets the partition utilization rate to go critical at, default 95"
+	echo "  -m|--min)"
+	echo "   Sets the delete /dev/shm time,unit:min,default 120min"
+	echo "  -zm|--zmin)"
+	echo "   Sets the delete /dev/shm/itmp/G1 and /dev/shm/itmp/S1 and /dev/shm/itmp/i.cache time,unit:min,default 30min"
+        echo "  -v|--version)"
+	echo "   Show author and version"
+        echo ""
+        exit $ST_UK
+}
+
+#get arguments
+while test -n "$1"; do
+        case "$1" in
+                --help|-h)
+                        print_help
+                        exit $ST_UK
+                        ;;
+                --version|-v)
+                        print_version
+                        exit $ST_UK
+                        ;;
+                -p|--part)
+                        part=$2
+                        shift
+                        ;;
+                -w)
+                        warn=$2
+                        shift
+                        ;;
+                -c)
+                        crit=$2
+                        shift
+                        ;;
+		--min|-m)
+			min=$2
+			shift
+			;;
+		--zmin|-zm)
+			zmin=$2
+			shift
+			;;
+                *)
+                        echo "Unknown argument: $1"
+                        print_help
+                        exit $ST_UK
+                        ;;
+        esac
+        shift
+done
+
+#get information
+get_partition_utilization_rate(){
+        TOTAL=$(/bin/df -h | /bin/grep $part | /bin/awk '{print $2}')
+        USED=$(/bin/df -h | /bin/grep $part | /bin/awk '{print $3}')
+        RATE=$(/bin/df -h | /bin/grep $part | /bin/awk '{print $5}' | /bin/sed 's/%//')
+        if [[ $RATE -ge $crit ]];then
+		if [ "$part" == "/dev/shm" -o "$part" == "/dev/shm/" ];then
+                	del_shm
+		fi
+                echo "$part crit - total: $TOTAL  used: $USED rate:"$RATE"%"
+                exit $ST_CR
+        elif [[ $RATE -ge $warn ]] && [[ $RATE -lt $crit ]];then
+		if [ "$part" == "/dev/shm" -o "$part" == "/dev/shm/" ];then
+                	del_shm
+		fi
+                echo "$part warn - total: $TOTAL  used: $USED rate:"$RATE"%"
+                exit $ST_WR
+        else
+                echo "$part ok - total: $TOTAL  used: $USED rate:"$RATE"%"
+                exit $ST_OK
+        fi
+}
+
+if [ $warn -gt $crit ];then
+        echo "Warn value must not be lower than critical value!"
+        echo ""
+        print_help
+fi
+
+get_partition_utilization_rate

@@ -1,0 +1,349 @@
+user  www;
+worker_processes  8;
+worker_cpu_affinity 00000001 00000010 00000100 00001000 00010000 00100000 01000000 10000000;
+
+error_log  /data/www/logs/nginx-error.log;
+worker_rlimit_nofile 8192;
+pid        /var/run/nginx.pid;
+
+events {
+    use epoll;
+    worker_connections  4096;
+}
+
+http {
+    include    mime.types;
+    index  index.html index.htm index.php;
+
+    default_type  application/octet-stream;
+#    log_format  main  '"$http_x_forwarded_for" - $remote_user [$time_local] "$request" '
+#                      '$status $body_bytes_sent "$http_referer" '
+#                      '"$http_user_agent" $request_time';
+    log_format  main  '$http_host  $time_iso8601  $request  $uri  $http_referer  '
+                        '$http_x_forwarded_for  $body_bytes_sent  rc:$status  '
+                        '$http_user_agent  $request_time';
+
+    access_log  /data/www/logs/nginx-access.log  main;
+
+    access_log off;
+    sendfile        on;
+    keepalive_timeout  3;
+
+
+    tcp_nodelay on;
+    fastcgi_connect_timeout 300;
+    fastcgi_send_timeout 300;
+    fastcgi_read_timeout 300;
+    fastcgi_buffer_size 64k;
+    fastcgi_buffers 4 64k;
+    fastcgi_busy_buffers_size 128k;
+    fastcgi_temp_file_write_size 128k;
+    fastcgi_intercept_errors on;
+    fastcgi_keep_conn on;
+    fastcgi_ignore_client_abort on;
+
+
+####### fastcgi-cache add by jincai@20121018 ##########
+    fastcgi_cache_path   /dev/shm/fcgi_cache  levels=1:2
+    keys_zone=fcgi_cache:1024m
+    inactive=10m;
+    fastcgi_cache_key http://$host$request_uri;
+
+#######################################################
+    gzip  on;
+    gzip_min_length  1k;
+    gzip_buffers     4 16k;
+    gzip_http_version 1.0;
+    gzip_comp_level 2;
+    gzip_types       text/plain application/x-javascript text/css application/xml;
+    gzip_vary on;
+
+    add_header SRV $server_addr;
+
+    client_max_body_size     10m;    
+    client_body_buffer_size  128k;
+    proxy_connect_timeout    600;    
+    proxy_read_timeout       600;    
+    proxy_send_timeout       600;    
+    proxy_buffer_size        8k;     
+    proxy_buffers            4 32k;  
+    proxy_busy_buffers_size 64k;
+    proxy_temp_file_write_size 64k;
+    proxy_http_version 1.1;
+    proxy_set_header        Host            $host;  
+    proxy_set_header        X-Real-IP $remote_addr;
+    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+
+    upstream www-gexing-hz {
+      server 122.225.115.212:80;
+      server 122.225.115.203:80;
+    }
+    upstream www-xinqing-hz {
+      server 121.18.211.72:80;
+      #server 122.225.115.213:80;
+    }
+
+######### nginx and php-fpm service monitor ########
+    server {
+        listen      80; 
+        ##添加监控模块##
+        location /nginx_status {
+            stub_status on;
+            access_log off;
+                # allow xx.xx.xx.xx;    #允许访问的IP地址
+                # deny all;
+            allow 172.16.0.0/16;
+        }
+        location ~ (/pmstatus|/pmping)$ {
+            #fastcgi_pass   127.0.0.1:9000;
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+            include        fastcgi.conf;
+            allow 172.16.0.0/16;
+        }
+     }    
+
+######### www.gexing.com ############
+     server {
+        listen      80; 
+        server_name www.gexing.com gexing.com  ;
+        root   /data/www/htdocs/www.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/www.gexing.com-access.log  main;
+        error_log  /data/www/logs/www.gexing.com-error.log;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+    	location / {
+      		proxy_pass http://www-gexing-hz;
+	}
+     }
+
+######## www.qqgexing.com ###########
+     server {
+       listen      80; 
+       server_name www.qqgexing.com qqgexing.com;
+       root  /data/www/htdocs/oldsite;
+       index  index.html index.htm index.php;
+
+	access_log /data/www/logs/www.qqgexing.com-access.log main;
+	error_log  /data/www/logs/www.qqgexing.com-error.log;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+    	location / {
+      		proxy_pass http://www-gexing-hz;
+	}
+     }
+
+######## www.xinqing.com ###########
+     server {
+       listen      80;
+       server_name www.xinqing.com xinqing.com;
+       root  /data/www/htdocs/oldsite;
+       index  index.html index.htm index.php;
+
+        access_log /data/www/logs/www.xinqing.com-access.log main;
+	error_log  /data/www/logs/www.xinqing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location / {
+                proxy_pass http://www-xinqing-hz;
+        }
+     }
+
+######### log analysis(pv uip) #############
+     server {
+        listen      80; 
+        server_name jj.gexing.com;
+            root   /data/www/htdocs/jic.gexing.com;
+            index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/jj.gexing.com-access.log  main;
+        error_log  /data/www/logs/jj.gexing.com-error.log ;
+
+        keepalive_timeout  6;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~ \.(php|php5)?$ {
+            #fastcgi_pass   127.0.0.1:9000;
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+            include        fastcgi.conf;
+        }
+     }
+
+########## sso ################
+     server {
+        listen       80;
+        server_name sso.gexing.com ss.gexing.com;
+            root   /data/www/htdocs/sso.gexing.com;
+            index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/sso.gexing.com-access.log  main;
+        error_log  /data/www/logs/sso.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+            include        fastcgi.conf;
+        }
+     }
+
+########## count ################
+     server {
+        listen       80;
+        server_name count.gexing.com;
+            root   /data/www/htdocs/www.gexing.com/count;
+            index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/count.gexing.com-access.log  main;
+        error_log  /data/www/logs/count.gexing.com-error.log warn;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        keepalive_timeout 0;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+            include        fastcgi.conf;
+        }
+     }
+
+####### mobile.gexing.com ################
+     server {
+        listen      80; 
+        server_name api.mobile.gexing.com *.mobile.gexing.com shouji.gexing.com;
+            root   /data/www/htdocs/mobile.gexing.com;
+            index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/mobile.gexing.com-access.log  main;
+        error_log  /data/www/logs/mobile.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location  /{
+            rewrite ^/(gx|jz|zy)$  http://shouji.gexing.com/$1/ permanent;
+            rewrite ^/(gx|jz|zy)/$ /index.php?action=$1 last;
+            rewrite ^/download/(gx|jz|share)/(.*)/(.*).apk$ http://shouji.gexing.com/download/$1/$3.apk break;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+            include        fastcgi.conf;
+        }
+     }
+
+######## m.gexing.com ########################
+     server {
+        listen      80;
+        server_name m.gexing.com test.m.gexing.com;
+            root   /data/www/htdocs/mobile.gexing.com;
+            index  3g_index.php;
+
+        access_log  /data/www/logs/m.gexing.com-access.log  main;
+        error_log  /data/www/logs/m.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+     }
+
+####### ic.analytics.gexing.com ################
+     server {
+        listen      80; 
+        server_name ic.analytics.gexing.com;
+            root   /data/www/htdocs/ic.analytics.gexing.com;
+            index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/ic.analytics.gexing.com-access.log  main;
+        error_log  /data/www/logs/ic.analytics.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+            include        fastcgi.conf;
+        }
+     }
+
+###### search.gexing.com ########
+     server {
+        listen      80;
+        server_name api.search.gexing.com search.gexing.com so.gexing.com;
+        root   /data/www/htdocs/search.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/search.gexing.com-access.log  main;
+        error_log  /data/www/logs/sarch.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi_params;
+            include        fastcgi.conf;
+        }
+        location /{
+                rewrite ^/(.*) /index.php last;
+        }
+     }
+     include /etc/nginx/conf.d/*;
+}

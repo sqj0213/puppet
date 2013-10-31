@@ -1,0 +1,150 @@
+#global variable
+$InputFilePollInterval 5
+
+#fastdfs-storage-G-access文件input模块配置
+$InputFileName /data/www/logs/fastdfs-storage-G-access.log
+$InputFileTag fastdfs-storage-G-access:
+$InputFileStateFile fastdfs-storage-G-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-G-error文件input模块配置
+$InputFileName /data/www/logs/fastdfs-storage-G-error.log
+$InputFileTag fastdfs-storage-G-error:
+$InputFileStateFile fastdfs-storage-G-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-S-access文件input模块配置
+$InputFileName /data/www/logs/photo.gexing.com-access.log
+$InputFileTag fastdfs-storage-S-access:
+$InputFileStateFile fastdfs-storage-S-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-S-error文件input模块配置
+$InputFileName /data/www/logs/photo.gexing.com-error.log
+$InputFileTag fastdfs-storage-S-error:
+$InputFileStateFile fastdfs-storage-S-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-G-storage文件input模块配置
+$InputFileName /data/fastdfs_storage/G/G1/logs/storaged.log
+$InputFileTag fastdfs-storage-G-storage:
+$InputFileStateFile fastdfs-storage-G-storage.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-S-storage文件input模块配置
+$InputFileName /data/fastdfs_storage/S/S1/logs/storaged.log
+$InputFileTag fastdfs-storage-S-storage:
+$InputFileStateFile fastdfs-storage-S-storage.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-G-tracker文件input模块配置
+$InputFileName /data/fastdfs_tracker/G/G1/logs/trackerd.log
+$InputFileTag fastdfs-storage-G-tracker:
+$InputFileStateFile fastdfs-storage-G-tracker.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-S-tracker文件input模块配置
+$InputFileName /data/fastdfs_tracker/S/S1/logs/trackerd.log
+$InputFileTag fastdfs-storage-S-tracker:
+$InputFileStateFile fastdfs-storage-S-tracker.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#fastdfs-storage-fdhtd文件input模块配置
+$InputFileName /data/fastdht/logs/fdhtd.log
+$InputFileTag fastdfs-storage-fdhtd:
+$InputFileStateFile fastdfs-storage-fdhtd.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#messages文件input模块配置
+$InputFileName /var/log/messages
+$InputFileTag pic-messages:
+$InputFileStateFile messages.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#syslog 转发到relay机器进行邮件与短信提醒
+$ActionQueueFileName acQfastdfs
+$ActionQueueMaxDiskSpace 200G
+$ActionQueueSaveOnShutdown on
+$ActionQueueMaxFileSize 512M
+$ActionQueueType LinkedList
+$ActionResumeRetryCount -1
+#$ActionQueueDiscardMark 1500000
+#$ActionQueueQueueDiscardSeverity 3
+$ActionQueueHighWatermark 3000
+$ActionQueueLowWatermark 1000
+$ActionQueueTimeoutEnqueue 200
+$ActionDequeueBatchSize 200
+
+#却除nginx里含有200状态码的日志filter配置
+if ($programname == 'fastdfs-storage-G-access' or $programname == 'fastdfs-storage-S-access') and ($msg contains '  rc:200  ') then stop
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-G-access'  then
+{
+	 @@<%= ip%>:10514
+	 stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-G-error'  then 
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-S-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-S-error'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-G-storage'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-S-storage'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-G-tracker'  then 
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-S-tracker'  then 
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'fastdfs-storage-fdhtd'  then 
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'pic-messages'  then
+{
+	@@<%= ip%>:10514
+	stop
+}

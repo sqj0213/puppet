@@ -1,0 +1,117 @@
+global
+    log         127.0.0.1 local2 info
+#    log         127.0.0.1 local2  notice notice
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     400000
+    user        haproxy
+    group       haproxy
+    nbproc      1
+    daemon
+
+    # turn on stats unix socket
+    #stats socket /var/lib/haproxy/stats
+    stats socket /var/run/haproxy.sock
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+    mode                    http
+    log                     global
+    option                  httplog clf
+    option                  dontlognull
+    option http-server-close
+    option forwardfor       except 127.0.0.0/8 header X-Forwarded-For
+    option                  redispatch
+    option                  httpchk
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 6s
+    timeout check           10s
+    maxconn                 100000
+    stats enable
+#   stats refresh 60
+    stats uri   /jcwstats
+    stats auth  jincaiwang:woaini
+
+#---------------------------------------------------------------------
+# main frontend which proxys to the backends
+#---------------------------------------------------------------------
+frontend  gexing_webfarm *:80
+    mode  http
+
+    acl invalid-cl  hdr_val(content-length) le 0
+    block if invalid-cl
+
+    acl acl_sso hdr_reg(host) -i ^sso.gexing.com$
+    use_backend backend_sso if acl_sso
+
+    acl acl_count hdr_reg(host) -i ^count.gexing.com$
+    use_backend backend_count if acl_count
+
+    acl acl_search hdr_reg(host) -i ^(api.search|search|so).gexing.com$
+    use_backend backend_search if acl_search
+
+    acl acl_mobile hdr_reg(host) -i (shouji|mobile).gexing.com$
+    use_backend backend_mobile if acl_mobile
+
+    acl acl_pp_api hdr_reg(host) -i ^pp.api.gexing.com$
+    use_backend backend_pp_api if acl_pp_api
+
+    default_backend   backend_sso
+
+backend backend_sso
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.1.17:80     172.16.1.17:80 id 03 cookie s03 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 20
+    server  172.16.1.18:80     172.16.1.18:80 id 04 cookie s04 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_count
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping 
+    server  172.16.1.17:80     172.16.1.17:80 id 03 cookie c03 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.1.18:80     172.16.1.18:80 id 04 cookie c04 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_mobile
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.1.17:80     172.16.1.17:80 id 01 cookie wap01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.1.18:80     172.16.1.18:80 id 02 cookie wap02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_search
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.1.17:80     172.16.1.17:80 id 01 cookie c01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.1.18:80     172.16.1.18:80 id 02 cookie c02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_pp_api
+    mode       http
+    contimeout 5001
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.1.17:80     172.16.1.17:80 id 01 cookie pp01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.1.18:80     172.16.1.18:80 id 02 cookie pp02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10

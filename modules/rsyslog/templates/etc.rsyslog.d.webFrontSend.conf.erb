@@ -1,0 +1,506 @@
+#global variable
+$InputFilePollInterval 5
+
+#www.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/www.gexing.com-access.log
+$InputFileTag webFront-nginx-www-access:
+$InputFileStateFile www.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#www.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/www.gexing.com-error.log
+$InputFileTag webFront-nginx-www-error:
+$InputFileStateFile www.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#z.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/z.gexing.com-access.log
+$InputFileTag webFront-nginx-z-access:
+$InputFileStateFile z.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#z.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/z.gexing.com-error.log
+$InputFileTag webFront-nginx-z-error:
+$InputFileStateFile z.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#shouji.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/shouji.gexing.com-access.log
+$InputFileTag webFront-nginx-shouji-access:
+$InputFileStateFile shouji.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#shouji.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/shouji.gexing.com-error.log
+$InputFileTag webFront-nginx-shouji-error:
+$InputFileStateFile shouji.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#jz.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/jz.gexing.com-access.log
+$InputFileTag webFront-nginx-jz-access:
+$InputFileStateFile jz.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#jz.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/jz.gexing.com-error.log
+$InputFileTag webFront-nginx-jz-error:
+$InputFileStateFile jz.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#jic.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/jic.gexing.com-error.log
+$InputFileTag webFront-nginx-jic-error:
+$InputFileStateFile jic.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#biz.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/biz.gexing.com-error.log
+$InputFileTag webFront-nginx-biz-error:
+$InputFileStateFile biz.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#count.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/count.gexing.com-error.log
+$InputFileTag webFront-nginx-count-error:
+$InputFileStateFile count.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#game.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/game.gexing.com-access.log
+$InputFileTag webFront-nginx-game-access:
+$InputFileStateFile game.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#game.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/game.gexing.com-error.log
+$InputFileTag webFront-nginx-game-error:
+$InputFileStateFile game.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#dl.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/dl.gexing.com-access.log
+$InputFileTag webFront-nginx-dl-access:
+$InputFileStateFile dl.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#dl.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/dl.gexing.com-error.log
+$InputFileTag webFront-nginx-dl-error:
+$InputFileStateFile dl.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#m.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/m.gexing.com-access.log
+$InputFileTag webFront-nginx-m-access:
+$InputFileStateFile m.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#m.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/m.gexing.com-error.log
+$InputFileTag webFront-nginx-m-error:
+$InputFileStateFile m.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#ic.analytics.gexing.com-access文件input模块配置
+#$InputFileName /data/www/logs/ic.analytics.gexing.com-access.log
+#$InputFileTag webFront-nginx-analytics-access:
+#$InputFileStateFile ic.analytics.gexing.com-access.stat
+#$InputFileSeverity info
+#$InputFileFacility local7
+#$InputRunFileMonitor
+##ic.analytics.gexing.com-error文件input模块配置
+#$InputFileName /data/www/logs/ic.analytics.gexing.com-error.log
+#$InputFileTag webFront-nginx-analytics-error:
+#$InputFileStateFile ic.analytics.gexing.com-error.stat
+#$InputFileSeverity info
+#$InputFileFacility local7
+#$InputRunFileMonitor
+
+#xue.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/xue.gexing.com-access.log
+$InputFileTag webFront-nginx-xue-access:
+$InputFileStateFile xue.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#xue.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/xue.gexing.com-error.log
+$InputFileTag webFront-nginx-xue-error:
+$InputFileStateFile xue.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#zuoye.gexing.com-access文件input模块配置
+$InputFileName /data/www/logs/zuoye.gexing.com-access.log
+$InputFileTag webFront-nginx-zuoye-access:
+$InputFileStateFile zuoye.gexing.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#zuoye.gexing.com-error文件input模块配置
+$InputFileName /data/www/logs/zuoye.gexing.com-error.log
+$InputFileTag webFront-nginx-zuoye-error:
+$InputFileStateFile zuoye.gexing.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#ctb.qingguo.com-access.log文件input模块配置
+$InputFileName /data/www/logs/ctb.qingguo.com-access.log
+$InputFileTag webFront-nginx-ctb-qingguo-access:
+$InputFileStateFile ctb.qingguo.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#ctb.qingguo.com-error文件input模块配置
+$InputFileName /data/www/logs/ctb.qingguo.com-error.log
+$InputFileTag webFront-nginx-ctb-qingguo-error:
+$InputFileStateFile ctb.qingguo.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#www.qingguo.com-access.log文件input模块配置
+$InputFileName /data/www/logs/www.qingguo.com-access.log
+$InputFileTag webFront-nginx-www-qingguo-access:
+$InputFileStateFile www.qingguo.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#www.qingguo.com-error文件input模块配置
+$InputFileName /data/www/logs/www.qingguo.com-error.log
+$InputFileTag webFront-nginx-www-qingguo-error:
+$InputFileStateFile www.qingguo.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#cyfls.qingguo.com-access.log文件input模块配置
+$InputFileName /data/www/logs/cyfls.qingguo.com-access.log
+$InputFileTag webFront-nginx-cyfls-qingguo-access:
+$InputFileStateFile cyfls.qingguo.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#cyfls.qingguo.com-error文件input模块配置
+$InputFileName /data/www/logs/cyfls.qingguo.com-error.log
+$InputFileTag webFront-nginx-cyfls-qingguo-error:
+$InputFileStateFile cyfls.qingguo.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#cyfls.qingguo.com-app-error.log文件input模块配置(程序的error日志j)
+$InputFileName /data/www/logs/cyfls.qingguo.com-app-error.log
+$InputFileTag webFront-cyfls-qingguo-app-error:
+$InputFileStateFile cyfls.qingguo.com-app-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#zuoye.gexing.com-app-error文件input模块配置(程序的error日志j)
+$InputFileName /data/www/logs/zuoye.gexing.com-app-error.log
+$InputFileTag webFront-zuoye-app-error:
+$InputFileStateFile zuoye.gexing.com-app-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#www.1dui1.com-access文件input模块配置
+$InputFileName /data/www/logs/www.1dui1.com-access.log	
+$InputFileTag webFront-nginx-1dui1-access:
+$InputFileStateFile www.1dui1.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#www.1dui.com-error文件input模块配置
+$InputFileName /data/www/logs/www.1dui1.com-error.log
+$InputFileTag webFront-nginx-1dui1-error:
+$InputFileStateFile www.1dui1.com-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#www.1dui.com-app-error文件input模块配置
+$InputFileName /data/www/logs/www.1dui1.com-app-error.log
+$InputFileTag webFront-nginx-1dui1-app-error:
+$InputFileStateFile www.1dui1.com-app-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#webFront-php-fpm-error文件input模块配置
+$InputFileName /data/www/logs/php-fpm-error.log
+$InputFileTag webFront-php-fpm-error:
+$InputFileStateFile php-fpm-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#webFront-php-fpm-slow文件input模块配置
+$InputFileName /data/www/logs/php-fpm-slow.log
+$InputFileTag webFront-php-fpm-slow:
+$InputFileStateFile php-fpm-slow.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#webFront-php-fpm-www-error文件input模块配置
+$InputFileName /data/www/logs/php-fpm-www-error.log
+$InputFileTag webFront-php-fpm-www-error:
+$InputFileStateFile php-fpm-www-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#webFront-messages文件input模块配置
+$InputFileName /var/log/messages
+$InputFileTag webFront-messages:
+$InputFileStateFile messages.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#却除nginx里含有200状态码的日志filter配置
+if ($programname == 'webFront-nginx-z-access' or $programname == 'webFront-nginx-www-access' or $programname == 'webFront-nginx-z-error' or $programname == 'webFront-nginx-www-error' or $programname == 'webFront-nginx-jz-access' or $programname == 'webFront-nginx-shouji-access' or $programname == 'webFront-nginx-zuoye-access' or $programname == 'webFront-nginx-1dui1-access' or $programname == 'webFront-nginx-m-access' or $programname == 'webFront-nginx-analytics-access' or $programname == 'webFront-nginx-ctb-qingguo-access' or $programname == 'webFront-nginx-cyfls-qingguo-access' or $programname == 'webFront-nginx-www-qingguo-access') and (($msg contains '  rc:200  ') or ( $msg contains '  rc:404  ')  or ($msg contains '  rc:301  ') or ($msg contains '  rc:302  ') or ( $msg contains '  rc:304  ') or ($msg contains 'fcgi_cache'))  then stop
+#过滤jic的No such file or directory关键字日志
+if ( ( $programname == 'webFront-nginx-jic-error'  or $programname == 'webFront-nginx-z-error' or $appName == 'webFront-nginx-www-error') and $msg contains 'No such file or directory' ) then stop
+
+#syslog 转发到relay机器进行邮件与短信提醒
+$ActionQueueFileName acQweb
+$ActionQueueMaxDiskSpace 200G
+$ActionQueueSaveOnShutdown on
+$ActionQueueMaxFileSize 512M
+$ActionQueueType LinkedList
+$ActionResumeRetryCount -1
+#$ActionQueueDiscardMark 1500000
+#$ActionQueueQueueDiscardSeverity 3
+$ActionQueueHighWatermark 3000
+$ActionQueueLowWatermark 1000
+$ActionQueueTimeoutEnqueue 200
+$ActionDequeueBatchSize 200
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-www-access'  then
+{
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-www-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-z-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-z-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-shouji-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-shouji-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-jz-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-jz-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-zuoye-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-zuoye-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-zuoye-app-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-1dui1-access'  then
+{
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-1dui1-error'  then
+{
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-1dui1-app-error'  then
+{
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-game-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-game-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-dl-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-dl-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-xue-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-xue-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+#if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-analytics-access'  then
+#{       
+#        @@<%= ip%>:10514
+#        stop
+#}
+#if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-analytics-error'  then
+#{       
+#        @@<%= ip%>:10514
+#        stop
+#}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-m-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-m-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-count-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-biz-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-jic-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-php-fpm-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-php-fpm-slow'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-php-fpm-www-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'pic-upload-client'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-messages'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-ctb-qingguo-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-ctb-qingguo-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-www-qingguo-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-www-qingguo-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-cyfls-qingguo-access'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-nginx-cyfls-qingguo-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'webFront-cyfls-qingguo-app-error'  then
+{       
+        @@<%= ip%>:10514
+        stop
+}

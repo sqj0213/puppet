@@ -1,0 +1,61 @@
+global
+#    log         127.0.0.1 local2 notice notice
+    log         127.0.0.1 local2 info
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     60000
+    user        haproxy
+    group       haproxy
+    daemon
+    stats socket /var/lib/haproxy/stats
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+    mode                    http
+    log                     global
+    option                  httplog
+    option                  dontlognull
+    option http-server-close
+    option forwardfor       except 127.0.0.0/8 header X-Forwarded-For
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          10s
+    timeout server          1m
+    timeout http-keep-alive 3s
+    timeout check           30s
+    maxconn                 60000
+    stats enable
+    stats uri   /jcwstats
+    stats auth  jincaiwang:woaini
+
+#---------------------------------------------------------------------
+# main frontend which proxys to the backends
+#---------------------------------------------------------------------
+frontend  main *:80
+
+    acl invalid-cl  hdr_val(content-length) le 0
+    block if invalid-cl
+
+    acl acl_jic hdr_reg(host) -i ^jic.gexing.com$
+    use_backend backend_jic if acl_jic
+
+    default_backend   backend_jic
+
+backend backend_jic
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    uri
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    server  172.16.3.14:7082   172.16.3.14:7082 id 01 cookie jic_14 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.3.15:7082   127.16.3.15:7082 id 02 cookie jic_15 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.3.16:7082   172.16.3.16:7082 id 06 cookie jic_16 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.3.17:7082   127.16.3.17:7082 id 07 cookie jic_17 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10

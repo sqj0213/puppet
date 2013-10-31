@@ -1,0 +1,43 @@
+#gearmanWorkerDaemon-access文件input模块配置
+$InputFileName /var/log/gearmanWorkerDaemon-access.log
+$InputFileTag gearman-gearman_worker-access:
+$InputFileStateFile gearman-gearman_worker-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputFilePollInterval 5
+$InputRunFileMonitor
+
+#gearmanWorkerDaemon-error文件input模块配置
+$InputFileName /var/log/gearmanWorkerDaemon-error.log
+$InputFileTag gearman-gearman_worker-error:
+$InputFileStateFile gearman-gearman_worker-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputFilePollInterval 5
+$InputRunFileMonitor
+
+#syslog 转发到relay机器进行邮件与短信提醒
+$ActionQueueFileName acQgearman
+$ActionQueueMaxDiskSpace 200G
+$ActionQueueSaveOnShutdown on
+$ActionQueueMaxFileSize 512M
+$ActionQueueType LinkedList
+$ActionResumeRetryCount -1
+#$ActionQueueDiscardMark 1500000
+#$ActionQueueQueueDiscardSeverity 3
+$ActionQueueHighWatermark 3000
+$ActionQueueLowWatermark 1000
+$ActionQueueTimeoutEnqueue 200
+$ActionDequeueBatchSize 200
+
+#filter配置
+if ($programname == 'gearman-gearman_worker-access') and ($msg contains 'recive protocaldata:') then stop
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'gearman-gearman_worker-access'  then {
+	@@<%= ip%>:10514
+	stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'gearman-gearman_worker-error'  then {
+	@@<%= ip%>:10514
+	stop
+}

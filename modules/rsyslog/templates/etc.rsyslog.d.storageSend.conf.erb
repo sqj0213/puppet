@@ -1,0 +1,364 @@
+#global variable
+$InputFilePollInterval 5
+
+#storage-nginx-fdfs-photo-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-photo-access.log
+$InputFileTag storage-nginx-fdfs-photo-access:
+$InputFileStateFile storage-nginx-fdfs-photo-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-fdfs-photo-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-photo-error.log
+$InputFileTag storage-nginx-fdfs-photo-error:
+$InputFileStateFile storage-nginx-fdfs-photo-error.log.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-fdfs-resize-photo-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-resize-photo-access.log
+$InputFileTag storage-nginx-fdfs-resize-photo-access:
+$InputFileStateFile storage-nginx-fdfs-resize-photo-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-fdfs-resize-photo-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-resize-photo-error.log
+$InputFileTag storage-nginx-fdfs-resize-photo-error:
+$InputFileStateFile storage-nginx-fdfs-resize-photo-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-fdfs-resize-www-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-resize-www-access.log
+$InputFileTag storage-nginx-fdfs-resize-www-access:
+$InputFileStateFile storage-nginx-fdfs-resize-www-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-fdfs-resize-www-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-resize-www-error.log
+$InputFileTag storage-nginx-fdfs-resize-www-error:
+$InputFileStateFile storage-nginx-fdfs-resize-www-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-fdfs-www-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-www-access.log
+$InputFileTag storage-nginx-fdfs-www-access:
+$InputFileStateFile storage-nginx-fdfs-www-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-fdfs-www-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-fdfs-www-error.log
+$InputFileTag storage-nginx-fdfs-www-error:
+$InputFileStateFile storage-nginx-fdfs-www-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-nfs-avatar-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-avatar-access.log
+$InputFileTag storage-nginx-nfs-avatar-access:
+$InputFileStateFile storage-nginx-nfs-avatar-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-nfs-avatar-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-avatar-error.log
+$InputFileTag storage-nginx-nfs-avatar-error:
+$InputFileStateFile storage-nginx-nfs-avatar-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-nfs-resize-www-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-resize-www-access.log
+$InputFileTag storage-nginx-nfs-resize-www-access:
+$InputFileStateFile storage-nginx-nfs-resize-www-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-nfs-resize-www-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-resize-www-error.log
+$InputFileTag storage-nginx-nfs-resize-www-error:
+$InputFileStateFile storage-nginx-nfs-resize-www-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-nfs-www-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-www-access.log
+$InputFileTag storage-nginx-nfs-www-access:
+$InputFileStateFile storage-nginx-nfs-www-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-nfs-www-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-www-error.log
+$InputFileTag storage-nginx-nfs-www-error:
+$InputFileStateFile storage-nginx-nfs-www-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-nfs-xinqing-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-xinqing-access.log
+$InputFileTag storage-nginx-nfs-xinqing-access:
+$InputFileStateFile storage-nginx-nfs-xinqing-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-nfs-xinqing-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-nfs-xinqing-error.log
+$InputFileTag storage-nginx-nfs-xinqing-error:
+$InputFileStateFile storage-nginx-nfs-xinqing-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-php-photo-photo-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-php-photo-photo-access.log
+$InputFileTag storage-nginx-php-photo-photo-access:
+$InputFileStateFile storage-nginx-php-photo-photo-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-php-photo-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-php-photo-error.log
+$InputFileTag storage-nginx-php-photo-photo-error:
+$InputFileStateFile storage-nginx-php-photo-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-nginx-php-resize-www-access模块配置
+$InputFileName /data1/www/logs/storage-nginx-php-resize-www-access.log
+$InputFileTag storage-nginx-php-resize-www-access:
+$InputFileStateFile storage-nginx-php-resize-www-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-nginx-php-resize-www-error模块配置
+$InputFileName /data1/www/logs/storage-nginx-php-resize-www-error.log
+$InputFileTag storage-nginx-php-resize-www-error:
+$InputFileStateFile storage-nginx-php-resize-www-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-proxy-p-access模块配置
+$InputFileName /data1/www/logs/storage-proxy-p-access.log
+$InputFileTag storage-proxy-p-access:
+$InputFileStateFile storage-proxy-p-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-proxy-p-error模块配置
+$InputFileName /data1/www/logs/storage-proxy-p-error.log
+$InputFileTag storage-proxy-p-error:
+$InputFileStateFile storage-proxy-p-error.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#storage-proxy-photo-access-tmp模块配置
+$InputFileName /data1/www/logs/storage-proxy-photo-access-tmp.log
+$InputFileTag storage-proxy-photo-access-tmp:
+$InputFileStateFile storage-proxy-photo-access-tmp.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#storage-proxy-photo-error-tmp模块配置
+$InputFileName /data1/www/logs/storage-proxy-photo-error-tmp.log
+$InputFileTag storage-proxy-photo-error-tmp:
+$InputFileStateFile storage-proxy-photo-error-tmp.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#upload.qingguo.com-access.log模块配置
+$InputFileName /data1/www/logs/upload.qingguo.com-access.log
+$InputFileTag upload.qingguo.com-access:
+$InputFileStateFile upload.qingguo.com-access.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+#upload.qingguo.com-error.log模块配置
+$InputFileName /data1/www/logs/upload.qingguo.com-error.log
+$InputFileTag upload.qingguo.com-error:
+$InputFileStateFile upload.qingguo.com-error.log.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#messages文件input模块配置
+$InputFileName /var/log/messages
+$InputFileTag pic-messages:
+$InputFileStateFile messages.stat
+$InputFileSeverity info
+$InputFileFacility local7
+$InputRunFileMonitor
+
+#syslog 转发到relay机器进行邮件与短信提醒
+$ActionQueueFileName acQfastdfs
+$ActionQueueMaxDiskSpace 200G
+$ActionQueueSaveOnShutdown on
+$ActionQueueMaxFileSize 512M
+$ActionQueueType LinkedList
+$ActionResumeRetryCount -1
+#$ActionQueueDiscardMark 1500000
+#$ActionQueueQueueDiscardSeverity 3
+$ActionQueueHighWatermark 3000
+$ActionQueueLowWatermark 1000
+$ActionQueueTimeoutEnqueue 200
+$ActionDequeueBatchSize 200
+
+#却除nginx里含有200状态码的日志filter配置
+if ($programname == 'storage-nginx-fdfs-photo-access' or $programname == 'storage-nginx-fdfs-resize-photo-access' or $programname == 'storage-nginx-fdfs-resize-www-access' or $programname == 'storage-nginx-fdfs-www-access' or $programname == 'storage-nginx-nfs-avatar-access' or $programname == 'storage-nginx-nfs-resize-www-access' or $programname == 'storage-nginx-nfs-www-access' or $programname == 'storage-nginx-nfs-xinqing-access' or $programname == 'storage-nginx-php-photo-photo-access' or $programname == 'storage-nginx-php-resize-www-access' or $programname == 'storage-proxy-p-access' or $programname == 'storage-proxy-photo-access-tmp' or $programname == 'upload.qingguo.com-access') and ($msg contains '  rc:200  ') then stop
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-photo-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-photo-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-resize-photo-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-resize-photo-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-resize-www-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-resize-www-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-www-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-fdfs-www-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-avatar-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-avatar-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-resize-www-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-resize-www-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-www-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-www-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-xinqing-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-nfs-xinqing-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-php-photo-photo-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-php-photo-photo-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-php-resize-www-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-nginx-php-resize-www-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-proxy-p-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-proxy-p-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-proxy-photo-access-tmp'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'storage-proxy-photo-error-tmp'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'upload.qingguo.com-access'  then
+{
+         @@<%= ip%>:10514
+         stop
+}
+if  $syslogfacility-text == 'local7' and $syslogseverity-text == 'info' and $programname == 'upload.qingguo.com-error'  then
+{
+         @@<%= ip%>:10514
+         stop
+}

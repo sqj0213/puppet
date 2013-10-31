@@ -1,0 +1,416 @@
+user  www;
+worker_processes  8;
+worker_cpu_affinity 00000001 00000010 00000100 00001000 00010000 00100000 01000000 10000000;
+
+error_log  /data1/www/logs/nginx-error.log;
+worker_rlimit_nofile 8192;
+pid        /var/run/nginx.pid;
+
+events {
+    use epoll;
+    worker_connections  4096;
+}
+
+http {
+	include    mime.types;
+    	index  index.html index.htm index.php;
+    	default_type  application/octet-stream;
+    	log_format  main	'$http_host  $time_iso8601  $request  $uri  $http_referer  '
+				'$http_x_forwarded_for  $body_bytes_sent  rc:$status  '
+				'$http_user_agent  $request_time';
+
+    	access_log  /data1/www/logs/nginx-access.log  main;
+    	access_log off;
+    	sendfile        on;
+    	keepalive_timeout  0;
+    	tcp_nodelay on;
+    	fastcgi_connect_timeout 30;
+    	fastcgi_send_timeout 30;
+    	fastcgi_read_timeout 30;
+    	fastcgi_buffer_size 64k;
+    	fastcgi_buffers 4 64k;
+    	fastcgi_busy_buffers_size 128k;
+    	fastcgi_temp_file_write_size 128k;
+
+	gzip  on;
+	gzip_min_length  1k;
+	gzip_buffers     4 16k;
+	gzip_http_version 1.0;
+	gzip_comp_level 2;
+	gzip_types       text/plain application/x-javascript text/css application/xml;
+	gzip_vary on;
+
+	add_header SRV $server_addr;
+
+        ######### nginx and php-fpm service monitor ########
+        server {
+                listen       80;
+                listen       8080;
+<%- if server  == "old_storage" -%>
+                listen       <%= ipaddress_em2 %>:80;
+<%- end -%>
+                ##添加监控模块##
+                location /nginx_status {
+                        stub_status on;
+                        access_log off;
+                        # allow xx.xx.xx.xx;    #允许访问的IP地址
+                        # deny all;
+                        allow 172.16.0.0/16;
+                }
+                location ~ (/pmstatus|/pmping)$ {
+                        fastcgi_pass   unix:/var/run/php-fpm.sock;
+                        include        fastcgi.conf;
+                        allow 172.16.0.0/16;
+                }
+        }
+
+	#不走nfs直接到目标存储
+	upstream source-image-nfs {
+		server 172.16.2.11:7080 max_fails=3 fail_timeout=30s;
+		keepalive 16;
+	}
+	upstream resize-image-cache {
+		server 172.16.2.21:8002 max_fails=3 fail_timeout=30s;
+		server 172.16.2.22:8002 max_fails=3 fail_timeout=30s;
+		keepalive 16;
+	}
+	#走storage集群,集群内部通过nfs来读取不存在本地的文件
+        upstream source-image {
+                server 172.16.2.19:7080 max_fails=3 fail_timeout=30s;
+                server 172.16.2.20:7080 max_fails=3 fail_timeout=30s;
+                server 172.16.2.10:7080 max_fails=3 fail_timeout=30s;
+                server 172.16.2.11:7080 max_fails=3 fail_timeout=30s;
+                keepalive 16;
+        }
+        upstream source-image-cache {
+                server 172.16.2.21:8002 max_fails=3 fail_timeout=30s;
+                server 172.16.2.22:8002 max_fails=3 fail_timeout=30s;
+                keepalive 16;
+        }
+	#不走nfs,直接到fdfs存储
+        upstream source-image-fdfs {
+                server 172.16.2.19:7080 max_fails=3 fail_timeout=30s;
+                server 172.16.2.20:7080 max_fails=3 fail_timeout=30s;
+                keepalive 16;
+        }
+	#相册源图与缩略图的转发
+	server{
+		listen       8080;
+		server_name  photo.gexing.com;
+		#私密相册不可以开启fastdfs的模块，公有图片可开启,fdfs的一个bug
+		#http://photo.gexing.com:8080/S1/M00/07/57/rBABFFDat4agHtTGAALKkVIKV4s854.jpg 
+		#/S1/M00/07/57/rBABFFDat4agHtTGAALKkVIKV4s854.jpg
+		location ~ "/S\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			access_log  /data1/www/logs/storage-proxy-photo-access-tmp.log  main;
+			error_log  /data1/www/logs/storage-proxy-photo-error-tmp.log;
+			proxy_pass http://source-image-cache;
+			proxy_set_header Host $host;
+		}
+		#ln -s /data/fastdfs_storage/S/S1/data /data/fastdfs_storage/S/S1/data/S1/M00
+		#相册缩略location
+		location ~ "/S\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			access_log  /data1/www/logs/storage-proxy-photo-access-tmp.log  main;
+			error_log  /data1/www/logs/storage-proxy-photo-error-tmp.log;
+			proxy_pass http://resize-image-cache;
+			proxy_set_header Host $host;
+		}
+	}
+
+	#主站源图与缩略图的分发
+	server{
+		listen 8080;
+		server_name
+                        p1.gexing.com p2.gexing.com p3.gexing.com p4.gexing.com source.p.gexing.com
+                        p1.qqgexing.com p2.qqgexing.com p3.qqgexing.com p4.qqgexing.com source.p.qqgexing.com
+                        p1.imggx.com p2.imggx.com p3.imggx.com p4.imggx.com source.p.imggx.com
+                        p1.qqhot.com p2.qqhot.com p3.qqhot.com p4.qqhot.com source.p.qqhot.com
+                        p1.qingguo.com p2.qingguo.com source.p.qingguo.com
+                        m1.test.gexing.com m.p.gexing.com m.test.gexing.com 
+                        a1.gexing.com a2.gexing.com a3.gexing.com a4.gexing.com source.a.gexing.com
+                        a1.qqgexing.com a2.qqgexing.com a3.qqgexing.com a4.qqgexing.com source.a.qqgexing.com
+                        a1.imggx.com a2.imggx.com a3.imggx.com a4.imggx.com source.a.imggx.com
+                        a1.qqhot.com a2.qqhot.com a3.qqhot.com a4.qqhot.com source.a.qqhot.com
+                        a1.qingguo.com a2.qingguo.com source.a.qingguo.com
+                        m1.a.gexing.com m.a.gexing.com avatar.xinqing.com;
+
+		access_log  /data1/www/logs/storage-proxy-p-access.log  main;
+		error_log  /data1/www/logs/storage-proxy-p-error.log;
+                #新图片缩略location,长度30，33是考虑到用户头像需要补200,60,30等后辍导致
+                location ~ "/G\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                        proxy_pass http://resize-image-cache;
+                        proxy_set_header Host $host;
+                }
+
+                #旧图片缩略location
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/[a-z\dA-Z]{10,30}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                        proxy_pass http://resize-image-cache;
+                        proxy_set_header Host $host;
+                }
+                #旧图片缩略location
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/\d{1,4}/[a-z\dA-Z]{10,30}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                        proxy_pass http://resize-image-cache;
+                        proxy_set_header Host $host;
+                }
+		#http://p2.gexing.com/touxiang/2011-6/61212281201166850_200x200_3.gif
+		location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20[\-\d]{2,6}/[a-z\dA-Z]{10,30}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                        proxy_pass http://resize-image-cache;
+                        proxy_set_header Host $host;
+                }
+
+
+                #旧图片头像读取
+                #http://a2.gexing.com/36/km/ce/44r0044f200.jpg
+		#http://a2.gexing.com/2c/1/c4/17d860.jpg
+                location ~ "/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{5,11}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                        proxy_pass http://source-image-cache;
+                        proxy_set_header Host $host;
+                }
+
+               #新图片源图
+               #http://a4.gexing.com/G1/M00/DA/7A/rBABFFHkFcGBzuo3AAAUP31oxfc68360.jpg
+               location ~ "/G\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			#internal;
+			proxy_pass http://source-image-fdfs;
+			proxy_set_header Host $host;
+               }
+               #新图片相册源图与小图
+               #http://p4.gexing.com/G1/M00/04/02/rBACFFHvMvbjz53uAAFjhnLGa1k372.s.jpg
+               location ~ "/G\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}\.[s\d]{1,2}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+               		#internal;
+               		proxy_pass http://source-image;
+               		proxy_set_header Host $host;
+               }
+
+                #旧图片源图
+		#http://p1.gexing.com:8080/shaitu/20130711/1357/51de496009c3f.jpg 
+                #http://p2.gexing.com/cms/20130715/1345/51e38c5ed1512.jpg
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/[a-z\dA-Z]{10,30}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			#internal;
+                        proxy_pass http://source-image;
+			proxy_set_header Host $host;
+                }
+		#相册封面源图与小图
+                #http://p2.gexing.com/cms/20130715/1345/51e38c5ed1512.s|123456789.jpg
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/[a-z\dA-Z]{10,30}\.[s\d]{1,2}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                	proxy_pass http://source-image;
+               		proxy_set_header Host $host;
+                }
+		#http://p2.gexing.com/touxiang/2011-6/61212281201166850_200x200_3.gif
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20[\-\d]{2,6}/[a-z\dA-Z]{10,30}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                        proxy_pass http://source-image;
+                        proxy_set_header Host $host;
+                }
+
+                #旧图片心情头像读取
+                location ~ "/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{5,11}/(M|L|S)$" { 
+                        #internal;
+                        proxy_pass http://source-image-cache;
+                        proxy_set_header Host $host;
+                }
+
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/\d{1,4}/[a-z\dA-Z]{10,30}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+                        #internal;
+                        proxy_pass http://source-image;
+                        proxy_set_header Host $host;
+                }
+
+	}
+
+	#源图与缩略请求,(管理后台主站源图与缩略图，用户头像源图)
+	# ln -s /data/fastdfs_storage/G/G1/data /data/fastdfs_storage/G/G1/data/G1/M00
+	server {
+		listen       7080;
+ 		server_name  
+			p1.gexing.com p2.gexing.com p3.gexing.com p4.gexing.com source.p.gexing.com 
+			p1.qqgexing.com p2.qqgexing.com p3.qqgexing.com p4.qqgexing.com source.p.qqgexing.com 
+			p1.imggx.com p2.imggx.com p3.imggx.com p4.imggx.com source.p.imggx.com 
+			p1.qqhot.com p2.qqhot.com p3.qqhot.com p4.qqhot.com source.p.qqhot.com 
+                        p1.qingguo.com p2.qingguo.com source.p.qingguo.com
+			m1.test.gexing.com m.p.gexing.com m.test.gexing.com 
+                        a1.gexing.com a2.gexing.com a3.gexing.com a4.gexing.com source.a.gexing.com 
+                        a1.qqgexing.com a2.qqgexing.com a3.qqgexing.com a4.qqgexing.com source.a.qqgexing.com 
+                        a1.imggx.com a2.imggx.com a3.imggx.com a4.imggx.com source.a.imggx.com 
+                        a1.qqhot.com a2.qqhot.com a3.qqhot.com a4.qqhot.com source.a.qqhot.com 
+                        a1.qingguo.com a2.qingguo.com source.a.qingguo.com
+                        m1.a.gexing.com m.a.gexing.com avatar.xinqing.com;
+		
+
+		expires 300d;
+                #新图片缩略location
+                location ~ "/G\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        #root   /data2/www/imggx/i;
+                        access_log  /data1/www/logs/storage-nginx-fdfs-resize-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-fdfs-resize-www-error.log;
+			#try_files $uri ../../../shm/itmp/$uri /resize.fastdfs.php?uri=$uri;
+                        rewrite ^/(.*) /resize.fastdfs.php?uri=$1;
+                }
+
+                #旧图片缩略location
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/[a-z\dA-Z]{10,30}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        root   /data2/www/imggx/i;
+                        access_log  /data1/www/logs/storage-nginx-nfs-resize-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-resize-www-error.log;
+                        #过渡期填加此项,老图片直接从2.10上取,php也有此逻辑
+                        try_files $uri ../../i.cache/$uri /resize.nfscache.php?document_root=$document_root&uri=$uri;
+                        #try_files $uri ../../../shm/itmp/i.cache/$uri /resize.nfscache.php?document_root=$document_root&uri=$uri;
+                        #try_files $uri ../../i.cache/$uri /resize.cache.php?document_root=$document_root&uri=$uri;
+                }
+                #旧图片缩略location
+		#http://p2.gexing.com/touxiang/2011-6/61212281201166850_200x200_3.gif
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20[\-\d]{2,6}/[a-z\dA-Z]{10,30}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        root   /data2/www/imggx/i;
+                        access_log  /data1/www/logs/storage-nginx-nfs-resize-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-resize-www-error.log;
+			#过渡期填加此项,老图片直接从2.10上取,php也有此逻辑
+                        try_files $uri ../../i.cache/$uri /resize.nfscache.php?document_root=$document_root&uri=$uri;
+                        #try_files $uri ../../../shm/itmp/i.cache/$uri /resize.nfscache.php?document_root=$document_root&uri=$uri;
+                        #try_files $uri ../../i.cache/$uri /resize.cache.php?document_root=$document_root&uri=$uri;
+                }
+
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/\d{1,4}/[a-z\dA-Z]{10,30}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        root   /data2/www/imggx/i;
+                        access_log  /data1/www/logs/storage-nginx-nfs-resize-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-resize-www-error.log;
+                        #过渡期填加此项,老图片直接从2.10上取,php也有此逻辑
+                        try_files $uri ../../i.cache/$uri /resize.nfscache.php?document_root=$document_root&uri=$uri;
+                        #try_files $uri ../../../shm/itmp/i.cache/$uri /resize.nfscache.php?document_root=$document_root&uri=$uri;
+                        #try_files $uri ../../i.cache/$uri /resize.cache.php?document_root=$document_root&uri=$uri;
+                }
+
+                #旧图片头像读取
+                #http://a2.gexing.com/36/km/ce/44r0044f200.jpg
+                location ~ "/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{5,11}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        access_log  /data1/www/logs/storage-nginx-nfs-avatar-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-avatar-error.log;
+                        root  /data2/www/imggx/avatar/;
+                }
+
+		#新图片源图
+		#http://a4.gexing.com/G1/M00/DA/7A/rBABFFHkFcGBzuo3AAAUP31oxfc68360.jpg
+		location ~ "/G\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+			access_log  /data1/www/logs/storage-nginx-fdfs-www-access.log  main;
+			error_log  /data1/www/logs/storage-nginx-fdfs-www-error.log;
+			root   /data/fastdfs_storage/G/G1/data;
+			ngx_fastdfs_module;
+    		}
+               #新图片相册源图与小图
+               #http://p4.gexing.com/G1/M00/04/02/rBACFFHvMvbjz53uAAFjhnLGa1k372.s|123456789.jpg
+               location ~ "/G\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}\.[s\d]{1,2}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        access_log  /data1/www/logs/storage-nginx-fdfs-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-fdfs-www-error.log;
+                        root   /data/fastdfs_storage/G/G1/data;
+                        ngx_fastdfs_module;
+               }
+              
+		#旧图片源图
+		# ~*不区分大小写匹配
+		#http://p2.gexing.com/cms/20130715/1345/51e38c5ed1512.jpg
+		location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/[a-z\dA-Z]{10,30}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+			access_log  /data1/www/logs/storage-nginx-nfs-www-access.log  main;
+			error_log  /data1/www/logs/storage-nginx-nfs-www-error.log;
+			root /data2/www/imggx/i;
+		}
+		#http://p2.gexing.com/touxiang/2011-6/61212281201166850_200x200_3.gif
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20[\-\d]{2,6}/[a-z\dA-Z]{10,30}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        access_log  /data1/www/logs/storage-nginx-nfs-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-www-error.log;
+                        root /data2/www/imggx/i;
+                }
+
+
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/\d{1,4}/[a-z\dA-Z]{10,30}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        access_log  /data1/www/logs/storage-nginx-nfs-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-www-error.log;
+                        root /data2/www/imggx/i;
+                }
+                #相册封面源图与小图
+                #http://p2.gexing.com/cms/20130715/1345/51e38c5ed1512.s|123456789.jpg
+                location ~ "/(cms|dongtai|fengmian|kongjianpifu|qqpifu|shaitu|touxiang)/20\d{2,6}/\d{1,4}/[a-z\dA-Z]{10,30}\.[s\d]{1,2}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        access_log  /data1/www/logs/storage-nginx-nfs-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-www-error.log;
+                        root /data2/www/imggx/i;
+		}
+                
+                #旧图片心情头像读取
+                location ~ "/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{1,2}/[a-z\d]{5,11}/(M|L|S)$" { 
+			expires 300d;
+			root /data2/www/avatar;
+			access_log  /data1/www/logs/storage-nginx-nfs-xinqing-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-nfs-xinqing-error.log;
+			#/data2/www/avatar//37/g6/4e/37q9r7br/L.jpg
+			rewrite ^/(.*)/(L|M|S)$ /$1.$2.jpg break;
+                }
+
+                # php-fpm.sock
+                location ~ \.php$ {
+                        root /data1/www/htdocs/pic.upload.gexing.com/;
+                        access_log  /data1/www/logs/storage-nginx-php-resize-www-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-php-resize-www-error.log;
+                        fastcgi_pass   unix:/var/run/php-fpm.sock;
+                        fastcgi_param  SCRIPT_FILENAME $fastcgi_script_name;
+                        include        fastcgi.conf;
+                }
+
+		error_page   500 502 503 504  /50x.html;
+		location = /50x.html {
+			root   /usr/share/nginx/html;
+		}
+	}
+        #相册源图与缩略图
+        server{
+                listen       7080;
+                server_name  photo.gexing.com;
+
+		expires 300d;
+                #私密相册不可以开启fastdfs的模块，公有图片可开启,fdfs的一个bug
+                location ~ "/S\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        access_log  /data1/www/logs/storage-nginx-fdfs-photo-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-fdfs-photo-error.log;
+                        root   /data/fastdfs_storage/S/S1/data;
+                }
+		# ln -s /data/fastdfs_storage/S/S1/data /data/fastdfs_storage/S/S1/data/S1/M00
+                #相册缩略location
+                location ~ "/S\d{1,2}/M\d{2}/[A-Z\d]{2}/[A-Z\d]{2}/[A-Za-z\d_\-]{29,33}_\d{2,8}[x,@](\d{3})?(_\d{1,2})?\.(gif|jpg|jpeg|png|bmp|swf|spx|mp3)$" {
+			expires 300d;
+                        #root   /data2/www/imggx/i;
+                        access_log  /data1/www/logs/storage-nginx-fdfs-resize-photo-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-fdfs-resize-photo-error.log;
+                        #try_files $uri ../../../shm/itmp/$uri /resize.fastdfs.php?uri=$uri;
+                        rewrite ^/(.*) /resize.fastdfs.php?uri=$1;
+                }
+                # php-fpm.sock
+                location ~ \.php$ {
+                        root /data1/www/htdocs/pic.upload.gexing.com/;
+                        access_log  /data1/www/logs/storage-nginx-php-photo-photo-access.log  main;
+                        error_log  /data1/www/logs/storage-nginx-php-photo-error.log;
+                        fastcgi_pass   unix:/var/run/php-fpm.sock;
+                        fastcgi_param  SCRIPT_FILENAME $fastcgi_script_name;
+                        include        fastcgi.conf;
+                }
+        }
+
+<%- if server  == "old_storage" -%>
+	include /etc/nginx/conf.d/sites-enabled/*;
+<%- elsif server == "new_storage" -%>
+	include /etc/nginx/conf.d/*;
+<%- end -%>
+}

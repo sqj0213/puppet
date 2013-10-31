@@ -1,0 +1,287 @@
+###++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## 主库远程连接代理端口监听在  127.0.0.1 ， 考虑到 读操作更频繁，所以，将对应端口
+## unix socket 分配给 从库 
+## o_group[n]表示独立的redis，采用 Unix socket 连接
+## c_group[n]表示 cache ，采用 unix socket 连接
+## m_group[n]表示 master，采用 127.0.0.1:[port] 连接
+## s_group[n]表示 slave，采用 /var/run/nutcracker_redis_[port].sock 进行连接
+## chunshengster @ 20130527 注
+###++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## 'group1'=>array('master'=>'172.16.1.5','slave'=>array('172.16.3.7','172.16.3.9'),'port'=>6379),
+#group1:
+#  listen: 127.0.0.1:6379
+#  hash: one_at_a_time 
+#  distribution: random 
+#  auto_eject_hosts: false
+#  redis: true 
+#  server_retry_timeout: 5 
+#  server_failure_limit: 3 
+#  backlog: 8192 
+#  preconnect: true 
+#  servers:
+#   - 172.16.2.5:6379:1
+#
+## 'group2'=>array('master'=>'172.16.1.5','slave'=>array('172.16.1.7'),'port'=>6380),
+#
+m_group2:
+  listen: 127.0.0.1:6380
+  hash: one_at_a_time
+  distribution: random
+  auto_eject_hosts: true
+  redis: true
+  server_retry_timeout: 5
+  server_failure_limit: 1
+  backlog: 8192
+  preconnect: true
+  servers:
+   - 172.16.1.5:6380:1
+
+s_group2:
+  listen: /var/run/nutcracker_redis_6380.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.7:6380:1
+
+## 'group9'=>array('master'=>'172.16.1.6','port'=>6387),
+## group9 and group10 will be a cluster
+c_group9:
+  listen: /var/run/nutcracker_redis_6387.sock
+  #listen: 127.0.0.1:6387
+  hash: fnv1a_64
+  distribution: ketama
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.6:6387:1
+   - 172.16.1.4:6387:1
+
+###   //个性空间 从100开始
+###   'group101' => array('master'=>'172.16.1.15','slave'=>array('172.16.1.16'),'port'=>6479),
+# redis 6479 主库
+m_group101:
+  listen: 127.0.0.1:6479
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6479:1
+
+# redis 6479 从库
+s_group101:
+  listen: /var/run/nutcracker_redis_6479.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5
+  server_failure_limit: 1
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.3.16:6479:1
+
+##   'group102' => array('master'=>'172.16.1.16','slave'=>array('172.16.1.15'),'port'=>6480),
+m_group102:
+  listen: 127.0.0.1:6480
+  #listen: /var/run/nutcracker_redis_6480.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.16:6480:1
+
+s_group102:
+  #listen: 127.0.0.1:6480
+  listen: /var/run/nutcracker_redis_6480.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6480:1
+
+##   'group103' => array('master'=>'172.16.1.15','slave'=>array('172.16.1.16'),'port'=>6481),
+m_group103:
+  listen: 127.0.0.1:6481
+  #listen: /var/run/nutcracker_redis_6481.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6481:1
+
+s_group103:
+  #listen: 127.0.0.1:6481
+  listen: /var/run/nutcracker_redis_6481.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.16:6481:1
+
+#   'group104' => array('master'=>'172.16.1.15','slave'=>array('172.16.1.16'),'port'=>6482),
+m_group104:
+  listen: 127.0.0.1:6482
+  #listen: /var/run/nutcracker_redis_6482.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6482:1
+
+s_group104:
+  #listen: 127.0.0.1:6482
+  listen: /var/run/nutcracker_redis_6482.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.16:6482:1
+
+###   'group105' => array('master'=>'172.16.1.15','slave'=>array('172.16.1.16'),'port'=>6483),
+m_group105:
+  #listen: /var/run/nutcracker_redis_6483.sock
+  listen: 127.0.0.1:6483
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6483:1
+
+s_group105:
+  listen: /var/run/nutcracker_redis_6483.sock
+  #listen: 127.0.0.1:6483
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.16:6483:1
+
+#   'group106' => array('master'=>'172.16.1.16','slave'=>array('172.16.1.15'),'port'=>6484),
+m_group106:
+  listen: 127.0.0.1:6484
+  #listen: /var/run/nutcracker_redis_6484.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.16:6484:1
+
+s_group106:
+  #listen: 127.0.0.1:6484
+  listen: /var/run/nutcracker_redis_6484.sock
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6484:1
+
+#   'group107' => array('master'=>'172.16.1.15','port'=>6485),
+#   Not Cache
+c_group107:
+  listen: /var/run/nutcracker_redis_6485.sock
+  #listen: 127.0.0.1:6485
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6485:1
+
+#   'group110' => array('master'=>'172.16.1.16','slave'=>array('172.16.1.15'),'port'=>6488),
+m_group110:
+  #listen: /var/run/nutcracker_redis_6488.sock
+  listen: 127.0.0.1:6488
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: false
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 3 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.16:6488:1
+
+s_group110:
+  listen: /var/run/nutcracker_redis_6488.sock
+  #listen: 127.0.0.1:6488
+  hash: one_at_a_time 
+  distribution: random 
+  auto_eject_hosts: true
+  redis: true 
+  server_retry_timeout: 5 
+  server_failure_limit: 1 
+  backlog: 8192 
+  preconnect: true 
+  servers:
+   - 172.16.1.15:6488:1

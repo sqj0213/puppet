@@ -1,0 +1,47 @@
+
+backend backend_storage
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    option httpchk HEAD /nginx_status
+    server  172.16.2.10:8080    172.16.2.10:8080 id 10 cookie img_new_10 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    #server  172.16.2.11:8080    172.16.2.11:8080 id 11 cookie img_new_11 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.2.19:8080    172.16.2.19:8080 id 21 cookie img_new_21 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.2.20:8080    172.16.2.20:8080 id 22 cookie img_new_22 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_manage
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    option httpchk HEAD /nginx_status
+    server  172.16.2.20:8080    172.16.2.20:8080 id 10 cookie img_new_10 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_photo
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    source
+    hash-type  consistent
+    option http-pretend-keepalive
+    option srvtcpka
+    option httpchk HEAD /nginx_status
+    server  172.16.2.23:80    172.16.2.23:80 id 01 cookie pic_z01 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.2.24:80    172.16.2.24:80 id 02 cookie pic_z02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_www
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.1.17:80     172.16.1.17:80 id 03 cookie s03 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 20
+    server  172.16.1.18:80     172.16.1.18:80 id 04 cookie s04 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10

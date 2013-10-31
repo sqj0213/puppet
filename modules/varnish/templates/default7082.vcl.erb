@@ -1,0 +1,117 @@
+backend default {
+        .host = "<%= ip %>";
+        .port = "80";
+        .connect_timeout = 3000s;
+        .first_byte_timeout = 300s;
+        .between_bytes_timeout = 300s;
+}
+
+acl purge {
+        "localhost";
+        "127.0.0.1";
+        "172.16.0.0"/16;
+        "123.103.21.0"/24;
+}
+
+sub vcl_recv {
+        if (req.restarts == 0) {
+                 if (req.http.x-forwarded-for) {
+                     set req.http.X-Forwarded-For =
+                         req.http.X-Forwarded-For + ", " + client.ip;
+                 } else {
+                     set req.http.X-Forwarded-For = client.ip;
+                 }
+        }
+
+        if (req.http.x-forwarded-for ~ "124.205.20.174") {
+                return (lookup);
+        }
+
+        if (req.request != "GET" && req.request != "HEAD") {
+                if (req.request == "POST") {
+                        return(pass);
+                }
+
+                if (req.request == "PURGE") {
+                        if (!client.ip ~ purge) {
+                                error 405 "Not allowed.";
+                        }
+                        return(lookup);
+                }
+
+                if (req.request == "BAN") {
+                 ban("obj.http.x-url ~ " + req.http.x-ban-url + 
+                     " && obj.http.x-host ~ " + req.http.x-ban-host);
+                 error 200 "Banned";
+                }
+
+                if (req.request == "REFRESH") {
+                 set req.request = "GET";
+                 set req.hash_always_miss = true;
+                }
+        }
+
+        if (req.url ~ "\.(js|css|xml|txt|png|gif|jpg|jpeg|bmp|ico|zip|pdf|swf|html)$") {
+                  unset req.http.cookie;
+                  return(lookup);
+        }
+
+        return(pass);
+}
+
+sub vcl_hit {
+        if (req.request == "PURGE") {
+                purge;
+                error 200 "Purged";
+        }
+        return(deliver);
+}
+
+sub vcl_miss {
+        if (req.request == "PURGE") {
+                purge;
+                error 404 "Not in cache";
+        }
+        return(fetch);
+}
+
+sub vcl_pipe {
+        return(pipe);
+}
+
+sub vcl_fetch {
+  	 if (req.url ~ "\.(png|gif|jpg|jpeg|bmp|zip|txt|pdf|swf|spx|mp3)$") {
+          unset beresp.http.set-cookie;
+          set beresp.ttl = 3h;
+          set beresp.http.x-url = req.url;
+          set beresp.http.x-host = req.http.host;
+        }
+
+        if (req.url ~ "\.(css|js|xml|html|htm|txt)$") {
+         unset beresp.http.set-cookie;
+         set beresp.ttl = 3h;
+         set beresp.http.x-url = req.url;
+         set beresp.http.x-host = req.http.host;
+        }
+  	if (beresp.status == 403 || beresp.status == 302 || beresp.status == 404 || beresp.status == 500 || beresp.status == 502 || beresp.status == 503 || beresp.status == 504 ) {
+          set beresp.http.Cache-Control = "max-age=0";
+          set beresp.ttl = 0s;
+        }
+}
+
+sub vcl_pass {
+        if (req.request == "PURGE") {
+                error 502 "PURGE on a passed object";
+        }
+}
+
+sub vcl_deliver {
+     unset resp.http.x-url;
+     unset resp.http.x-host;
+     if (obj.hits > 0) {
+      set resp.http.X-Cache = "HIT from <%= hostname %>";
+     } else {
+      set resp.http.X-Cache = "MISS from <%= hostname %>";
+     }
+      return (deliver);
+}

@@ -1,0 +1,80 @@
+127.0.0.1    localhost localhost.localdomain
+
+###BeiJing Host 2013-7-17 ###
+# Lvs
+172.16.1.2    leo-bj2 leo-bj2.internal.gexing.com
+172.16.1.3    leo-bj3 leo-bj3.internal.gexing.com
+172.16.1.21   leo-bj21 leo-bj21.internal.gexing.com
+172.16.1.22   leo-bj22 leo-bj22.internal.gexing.com
+# Redis
+172.16.1.4    aries-bj4 aries-bj4.internal.gexing.com 
+172.16.1.5    aries-bj5 aries-bj5.internal.gexing.com
+172.16.1.6    aries-bj6 aries-bj6.internal.gexing.com
+172.16.1.7    aries-bj7 aries-bj7.internal.gexing.com
+# MySQL
+172.16.1.8    virgo-bj8 virgo-bj8.internal.gexing.com
+172.16.1.9    virgo-bj9 virgo-bj9.internal.gexing.com
+172.16.1.12   virgo-bj12 virgo-bj12.internal.gexing.com
+172.16.1.16   virgo-bj16 virgo-bj16.internal.gexing.com
+172.16.1.15   virgo-bj15 virgo-bj15.internal.gexing.com
+# File
+172.16.2.10   taurus-bj10 taurus-bj10.internal.gexing.com
+172.16.2.11   taurus-bj11 taurus-bj11.internal.gexing.com
+172.16.1.19   taurus-bj19 taurus-bj19.internal.gexing.com
+172.16.1.20   taurus-bj20 taurus-bj20.internal.gexing.com sass.internal.gexing.com
+# Manger
+172.16.1.13   libra-bj13 libra-bj13.internal.gexing.com
+172.16.1.14   virgo-bj14 virgo-bj14.internal.gexing.com  master.internal.gexing.com master
+# sso count
+172.16.1.17   pisces-bj17 pisces-bj17.internal.gexing.com
+172.16.1.18   pisces-bj18 pisces-bj18.internal.gexing.com
+# www
+172.16.1.23   cancer-bj23 cancer-bj23.internal.gexing.com
+172.16.1.24   cancer-bj24 cancer-bj24.internal.gexing.com
+# pic.upload.z.gexing.com
+123.103.21.144 pic.upload.z.gexing.com
+
+###TangShan Host 2013-7-17 ###
+# Ha + Cache
+172.16.5.2    leo-ts2 leo-ts2.internal.gexing.com
+172.16.5.3    leo-ts3 leo-ts3.internal.gexing.com
+172.16.5.11    leo-ts11 leo-ts11.internal.gexing.com
+# WWW
+172.16.5.4    cancer-ts4 cancer-ts4.internal.gexing.com
+172.16.5.13   cancer-ts13 cancer-ts13.internal.gexing.com
+172.16.5.14   cancer-ts14 cancer-ts14.internal.gexing.com
+# Redis
+172.16.5.5    aries-ts5 aries-ts5.internal.gexing.com
+172.16.5.6    aries-ts6 aries-ts6.internal.gexing.com
+172.16.5.7    aries-ts7 aries-ts7.internal.gexing.com
+172.16.5.8    aries-ts8 aries-ts8.internal.gexing.com
+# MySQL
+172.16.5.9    virgo-ts9 virgo-ts9.internal.gexing.com
+172.16.5.10   virgo-ts10 virgo-ts10.internal.gexing.com
+# Rsyslog
+172.16.5.12   cancer-ts12 cancer-ts12.internal.gexing.com
+
+###HuZhou Host 2012-6-8 ###
+# Ha + Cache
+172.16.3.2    leo-hz2 leo-hz2.internal.gexing.com
+172.16.3.3    leo-hz3 leo-hz3.internal.gexing.com
+172.16.3.18   leo-hz18 leo-hz18.internal.gexing.com
+172.16.3.19   leo-hz19 leo-hz19.internal.gexing.com
+172.16.3.15   leo-hz15 leo-hz15.internal.gexing.com
+172.16.3.14   leo-hz14 leo-hz14.internal.gexing.com
+# WWW
+172.16.3.4    cancer-hz4 cancer-hz4.internal.gexing.com
+172.16.3.5    cancer-hz5 cancer-hz5.internal.gexing.com
+172.16.3.12   cancer-hz12 cancer-hz12.internal.gexing.com
+172.16.3.13   cancer-hz13 cancer-hz13.internal.gexing.com
+172.16.3.16   cancer-hz16 cancer-hz16.internal.gexing.com
+172.16.3.17   cancer-hz17 cancer-hz17.internal.gexing.com
+172.16.3.254  inner.z.gexing.com inner.zuowen.gexing.com
+# Redis
+172.16.3.6    aries-hz6 aries-hz6.internal.gexing.com
+172.16.3.7    aries-hz7 aries-hz7.internal.gexing.com
+172.16.3.8    aries-hz8 aries-hz8.internal.gexing.com
+172.16.3.9    aries-hz9 aries-hz9.internal.gexing.com
+# MySQl
+172.16.3.10   virgo-hz10 virgo-hz10.internal.gexing.com
+172.16.3.11   virgo-hz11 virgo-hz11.internal.gexing.com

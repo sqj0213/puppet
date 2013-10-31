@@ -1,0 +1,132 @@
+/data/mysql_3306/data/*.gexing.com.err
+/data/mysql_3306/data/*slow.log
+{
+        # create 600 mysql mysql
+        notifempty
+        daily
+        rotate 30
+        missingok
+        compress
+    postrotate
+        # just if mysqld is really running
+        if test -x /usr/bin/mysqladmin && \
+           /usr/bin/mysqladmin -S /data/mysql_3306/mysql.sock ping &>/dev/null
+        then
+           /usr/bin/mysqladmin -S /data/mysql_3306/mysql.sock flush-logs
+        fi
+    endscript
+}
+
+/data/mysql_3307/data/*.gexing.com.err
+/data/mysql_3307/data/*slow.log
+{
+        # create 600 mysql mysql
+        notifempty
+        daily
+        rotate 30
+        missingok
+        compress
+    postrotate
+        # just if mysqld is really running
+        if test -x /usr/bin/mysqladmin && \
+           /usr/bin/mysqladmin -S /data/mysql_3307/mysql.sock ping &>/dev/null
+        then
+           /usr/bin/mysqladmin -S /data/mysql_3307/mysql.sock flush-logs
+        fi
+    endscript
+}
+
+/data/mysql_3308/data/*.gexing.com.err
+/data/mysql_3308/data/*slow.log
+{
+        # create 600 mysql mysql
+        notifempty
+        daily
+        rotate 30
+        missingok
+        compress
+    postrotate
+        # just if mysqld is really running
+        if test -x /usr/bin/mysqladmin && \
+           /usr/bin/mysqladmin -S /data/mysql_3308/mysql.sock ping &>/dev/null
+        then
+           /usr/bin/mysqladmin -S /data/mysql_3308/mysql.sock flush-logs
+        fi
+    endscript
+}
+
+/data/mysql_3309/data/*.gexing.com.err
+/data/mysql_3309/data/*slow.log
+{
+        # create 600 mysql mysql
+        notifempty
+        daily
+        rotate 30
+        missingok
+        compress
+    postrotate
+        # just if mysqld is really running
+        if test -x /usr/bin/mysqladmin && \
+           /usr/bin/mysqladmin -S /data/mysql_3309/mysql.sock ping &>/dev/null
+        then
+           /usr/bin/mysqladmin -S /data/mysql_3309/mysql.sock flush-logs
+        fi
+    endscript
+}
+
+/data/mysql_3310/data/*.gexing.com.err
+/data/mysql_3310/data/*slow.log
+{
+        # create 600 mysql mysql
+        notifempty
+        daily
+        rotate 30
+        missingok
+        compress
+    postrotate
+        # just if mysqld is really running
+        if test -x /usr/bin/mysqladmin && \
+           /usr/bin/mysqladmin -S /data/mysql_3310/mysql.sock ping &>/dev/null
+        then
+           /usr/bin/mysqladmin -S /data/mysql_3310/mysql.sock flush-logs
+        fi
+    endscript
+}
+
+/data/mysql_3311/data/*.gexing.com.err
+/data/mysql_3311/data/*slow.log
+{
+        # create 600 mysql mysql
+        notifempty
+        daily
+        rotate 30
+        missingok
+        compress
+    postrotate
+        # just if mysqld is really running
+        if test -x /usr/bin/mysqladmin && \
+           /usr/bin/mysqladmin -S /data/mysql_3311/mysql.sock ping &>/dev/null
+        then
+           /usr/bin/mysqladmin -S /data/mysql_3311/mysql.sock flush-logs
+        fi
+    endscript
+}
+
+/data/mysql_3312/data/*.gexing.com.err
+/data/mysql_3312/data/*slow.log
+{
+        # create 600 mysql mysql
+        notifempty
+	daily
+        rotate 30
+        missingok
+        compress
+    postrotate
+	# just if mysqld is really running
+	if test -x /usr/bin/mysqladmin && \
+	   /usr/bin/mysqladmin -S /data/mysql_3312/mysql.sock ping &>/dev/null
+	then
+	   /usr/bin/mysqladmin -S /data/mysql_3312/mysql.sock flush-logs
+	fi
+    endscript
+}

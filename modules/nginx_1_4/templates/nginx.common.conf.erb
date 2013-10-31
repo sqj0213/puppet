@@ -1,0 +1,1834 @@
+user  www;
+worker_processes  <%= cpunumber %>;
+<% if cpunumber == "8" %>
+worker_cpu_affinity 00000001 00000010 00000100 00001000 00010000 00100000 01000000 10000000;
+<% else %>
+worker_cpu_affinity 00001 0010 0100 1000;
+<% end %>
+
+error_log  /data/www/logs/nginx-error.log;
+worker_rlimit_nofile 8192;
+pid        /var/run/nginx.pid;
+
+
+events {
+    use epoll;
+    worker_connections  4096;
+}
+
+
+http {
+    include    mime.types;
+    index  index.html index.htm index.php;
+
+    default_type  application/octet-stream;
+#    log_format  main  '"$http_x_forwarded_for" - $remote_user [$time_local] "$request" '
+#                      '$status $body_bytes_sent "$http_referer" '
+#                      '"$http_user_agent" $request_time';
+    log_format  main  '$http_host  $time_iso8601  $request  $uri  $http_referer  '
+                      '$http_x_forwarded_for  $body_bytes_sent  rc:$status  '
+                      '$http_user_agent  $request_time';
+
+    access_log  /data/www/logs/nginx-access.log  main;
+
+    access_log off;
+    sendfile        on;
+    keepalive_timeout  3;
+
+
+  tcp_nodelay on;
+  fastcgi_connect_timeout 300;
+  fastcgi_send_timeout 300;
+  fastcgi_read_timeout 300;
+  fastcgi_buffer_size 64k;
+  fastcgi_buffers 4 64k;
+  fastcgi_busy_buffers_size 128k;
+  fastcgi_temp_file_write_size 128k;
+  fastcgi_intercept_errors on;
+  fastcgi_keep_conn on;
+  fastcgi_ignore_client_abort on;
+
+
+  ####### fastcgi-cache add by jincai@20121018 ##########
+  fastcgi_cache_path   /dev/shm/fcgi_cache  levels=1:2
+  keys_zone=fcgi_cache:1024m
+  inactive=10m;
+  fastcgi_cache_methods GET;
+  fastcgi_cache_lock on;
+  fastcgi_cache_lock_timeout 10s;
+  fastcgi_cache_key http://$host$request_uri;
+  add_header X-Micro-Cache $upstream_cache_status;
+
+
+  #######################################################
+
+  gzip  on;
+  gzip_min_length  1k;
+  gzip_buffers     4 16k;
+  gzip_http_version 1.0;
+  gzip_comp_level 2;
+  gzip_types       text/plain application/x-javascript text/css application/xml;
+  gzip_proxied     expired no-cache no-store private auth;
+  gzip_vary on;
+
+  add_header SRV $server_addr;
+
+######### nginx and php-fpm service monitor ########
+  server {
+        listen      <%= port %>; 
+        ##添加监控模块##
+        location /nginx_status {
+            stub_status on;
+            access_log off;
+                # allow xx.xx.xx.xx;    #允许访问的IP地址
+                # deny all;
+            allow 172.16.0.0/16;
+        }
+        location ~ (/pmstatus|/pmping)$ {
+            #fastcgi_pass   127.0.0.1:9000;
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+            allow 172.16.0.0/16;
+        }
+
+
+  }
+
+######### www.gexing.com ############
+
+  server {
+        listen      <%= port %>; 
+        server_name www.gexing.com gexing.com;
+        root   /data/www/htdocs/www.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/www.gexing.com-access.log  main;
+        error_log  /data/www/logs/www.gexing.com-error.log;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+
+########################fastcgi_cacahe update in 2013-06-03###############################################
+
+        location ~ (index|index\.\w+|help|tool|tool[\-[a-z]+]?|list.tag|_cache)\.php$ {
+               fastcgi_pass   unix:/var/run/php-fpm.sock;
+               fastcgi_index  index.php;
+               fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+               include        fastcgi.conf;
+
+               fastcgi_cache   fcgi_cache;
+               fastcgi_cache_valid   200      3h;
+               fastcgi_cache_valid   any      1m;
+               fastcgi_cache_min_uses  1;
+               fastcgi_cache_use_stale error  timeout invalid_header http_500;
+        }
+
+       location ~ detail.(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|touxiang|qianming|wangming|fenzu|kongjianpifu|daima|tupian|wenzi|shengyin)\.php$ {
+               fastcgi_pass   unix:/var/run/php-fpm.sock;
+               fastcgi_index  index.php;
+               fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+               include        fastcgi.conf;
+
+               fastcgi_cache   fcgi_cache;
+               fastcgi_cache_valid   200      3h;
+               fastcgi_cache_valid   any      1m;
+               fastcgi_cache_min_uses  2;
+               fastcgi_cache_use_stale error  timeout invalid_header http_500;
+        }
+
+        ## 排行榜、最新、标签最新，精选
+       location ~ list.(top|new|tagsearch|touxiang)\.php$ {
+               fastcgi_pass   unix:/var/run/php-fpm.sock;
+               fastcgi_index  index.php;
+               fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+               include        fastcgi.conf;
+
+               fastcgi_cache   fcgi_cache;
+               fastcgi_cache_valid   200      3m;
+               fastcgi_cache_valid   any      1m;
+               fastcgi_cache_min_uses  1;
+               fastcgi_cache_use_stale error  timeout invalid_header http_500;
+        }
+
+        ## 专题列表、专题内容页
+       location ~ zhuanti.(list|detail)\.php$ {
+               fastcgi_pass   unix:/var/run/php-fpm.sock;
+               fastcgi_index  index.php;
+               fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+               include        fastcgi.conf;
+
+               fastcgi_cache   fcgi_cache;
+               fastcgi_cache_valid   200      5m;
+               fastcgi_cache_valid   any      1m;
+               fastcgi_cache_min_uses  1;
+               fastcgi_cache_use_stale error  timeout invalid_header http_500;
+        }
+#########################################################################
+        location ~ \.(php|php5)?$ {
+            #fastcgi_pass   127.0.0.1:9000;
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+
+
+##老个性对新个性的跳转
+
+        ####gexing.com
+        if ($host ~* '^gexing.com') {
+        rewrite ^/(.*)$ http://www.gexing.com/$1 permanent;
+        }
+
+        # 频道页
+        location /{
+        #1029 showpic
+        rewrite ^/(shaitu|zipai|pifu|qqpifu|bizhi)/showpic/(\d+)-(\d+).html$ /showpic.php?channel=$1&id=$2&pn=$3 last;
+
+
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)$ http://www.gexing.com/$1/ permanent;
+        rewrite ^/(yinxiang)/(\d+)$ http://www.gexing.com/$1/ permanent;
+        rewrite ^/(yinxiang)/(\d+)/$ http://www.gexing.com/$1/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|tupian|wenzi|shengyin|shipin)/$ /list.new.php?sucaiType=$1 last;
+        rewrite ^/qqfenzu/$ /list.new.php?sucaiType=fenzu last;
+        rewrite ^/qqpifu/$ /list.new.php?sucaiType=qqpifu last;
+        rewrite ^/pifu/$ /list.new.php?sucaiType=kongjianpifu last;
+        rewrite ^/liuyan/$ /list.new.php?sucaiType=daima last;
+        #
+        # 推荐页面
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|liuyan|tupian|wenzi|shengyin|shipin)/(\d+)/$ http://www.gexing.com/$1/$2 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|tupian|wenzi|shengyin|shipin)/(\d+)$ /list.new.php?sucaiType=$1&p=$2 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/(\d+)$ /list.new.php?sucaiType=$1&p=$2 last;
+        rewrite ^/qq(touxiang)/(\d+)$ /list.touxiang.php?p=$2 last;
+        rewrite ^/qqpifu/(\d+)$ /list.new.php?sucaiType=qqpifu&p=$1 last;
+        rewrite ^/pifu/(\d+)$ /list.new.php?sucaiType=kongjianpifu&p=$1 last;
+        rewrite ^/liuyan/(\d+)$ /list.new.php?sucaiType=daima&p=$1 last;
+        #
+        #
+        # 最新页面
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/new$ http://www.gexing.com/$1/new/ permanent;
+        rewrite ^/(qqqianming|qqwangming|qqfenzu)/new/(\d+)$ http://www.gexing.com/$1/new/ permanent;
+        rewrite ^/(qqqianming|qqwangming|qqfenzu)/new/(\d+)/$ http://www.gexing.com/$1/new/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|tupian|wenzi|shengyin|shipin)/new/$ /list.new.php?sucaiType=$1&type=latest last;
+        rewrite ^/qq(qianming|wangming|fenzu)/new/$ /list.new.php?sucaiType=$1&type=latest last;
+        rewrite ^/qq(touxiang)/new/$ /list.touxiang.php?type=latest last;
+        rewrite ^/qqpifu/new/$ /list.new.php?sucaiType=qqpifu&type=latest last;
+        rewrite ^/pifu/new/$ /list.new.php?sucaiType=kongjianpifu&type=latest last;
+        rewrite ^/liuyan/new/$ /list.new.php?sucaiType=daima&type=latest last;
+        #
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqpifu|pifu|fengmian|liuyan|tupian|wenzi|shengyin|shipin)/new/(\d+)/$ http://www.gexing.com/$1/new/$2  permanent;
+        rewrite ^/(qqqianming|qqwangming|qqfenzu)/new/(\d+)/(\d+)/$ http://www.gexing.com/$1/new/$2/$3 permanent;
+        rewrite ^/qq(qianming|wangming|fenzu)/new/(\d+)/(\d+)$ /list.new.php?sucaiType=$1&type=latest&date=$2&datepage=$3 last;
+        rewrite ^/(yinxiang)/new/(\d+)/(\d+)/$ http://www.gexing.com/$1/new/$2/$3 permanent;
+        rewrite ^/(yinxiang)/new/(\d+)/(\d+)$ /list.new.php?sucaiType=$1&type=latest&date=$2&datepage=$3 last;
+        rewrite ^/qq(touxiang)/new/(\d+)$ /list.touxiang.php?type=latest&p=$2 last;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|tupian|wenzi|shengyin|shipin)/new/(\d+)$ /list.new.php?sucaiType=$1&type=latest&p=$2 last;
+        rewrite ^/qqpifu/new/(\d+)$ /list.new.php?sucaiType=qqpifu&type=latest&p=$1 last;
+        rewrite ^/pifu/new/(\d+)$ /list.new.php?sucaiType=kongjianpifu&type=latest&p=$1 last;
+        rewrite ^/liuyan/new/(\d+)$ /list.new.php?sucaiType=daima&type=latest&p=$1 last;
+        #
+        # 日最热页面
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan)/hot24$ http://www.gexing.com/$1/hot24/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang)/hot24/$ /list.top.php?sucaiType=$1&type=dayhot last;
+        rewrite ^/qq(qianming|wangming|fenzu)/hot24/$ /list.top.php?sucaiType=$1&type=dayhot last;
+        rewrite ^/qq(touxiang)/hot24/$ /list.touxiang.php?type=dayhot last;
+        rewrite ^/qqpifu/hot24/$ /list.top.php?sucaiType=qqpifu&type=dayhot last;
+        rewrite ^/pifu/hot24/$ /list.top.php?sucaiType=kongjianpifu&type=dayhot last;
+        rewrite ^/liuyan/hot24/$ /list.top.php?sucaiType=daima&type=dayhot last;
+        #
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan)/hot24/(\d+)/$ http://www.gexing.com/$1/hot24/$2 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang)/hot24/(\d+)$ /list.top.php?sucaiType=$1&type=dayhot&p=$2 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/hot24/(\d+)$ /list.top.php?sucaiType=$1&type=dayhot&p=$2 last;
+        rewrite ^/qq(touxiang)/hot24/(\d+)$ /list.touxiang.php?type=dayhot&p=$2 last;
+        rewrite ^/qqpifu/hot24/(\d+)$ /list.top.php?sucaiType=qqpifu&type=dayhot&p=$1 last;
+        rewrite ^/pifu/hot24/(\d+)$ /list.top.php?sucaiType=kongjianpifu&type=dayhot&p=$1 last;
+        rewrite ^/liuyan/hot24/(\d+)$ /list.top.php?sucaiType=daima&type=dayhot&p=$1 last;
+
+        #
+        # 周最热页面
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/hot7$ http://www.gexing.com/$1/hot7/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|tupian|wenzi|shengyin|shipin)/hot7/$ /list.top.php?sucaiType=$1&type=weekhot last;
+        rewrite ^/qq(qianming|wangming|fenzu)/hot7/$ /list.top.php?sucaiType=$1&type=weekhot last;
+        rewrite ^/qq(touxiang)/hot7/$ /list.touxiang.php?type=weekhot last;
+        rewrite ^/qqpifu/hot7/$  /list.top.php?sucaiType=qqpifu&type=weekhot last;
+        rewrite ^/pifu/hot7/$ /list.top.php?sucaiType=kongjianpifu&type=weekhot last;
+        rewrite ^/liuyan/hot7/$ /list.top.php?sucaiType=daima&type=weekhot last;
+        #
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/hot7/(\d+)/$ http://www.gexing.com/$1/hot7/$2 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|tupian|wenzi|shengyin|shipin)/hot7/(\d+)$ /list.top.php?sucaiType=$1&type=weekhot&p=$2 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/hot7/(\d+)$ /list.top.php?sucaiType=$1&type=weekhot&p=$2 last;
+        rewrite ^/qq(touxiang)/hot7/(\d+)$ /list.touxiang.php?type=weekhot&p=$2 last;
+        rewrite ^/qqpifu/hot7/(\d+)$ /list.top.php?sucaiType=qqpifu&type=weekhot&p=$1 last;
+        rewrite ^/pifu/hot7/(\d+)$ /list.top.php?sucaiType=kongjianpifu&type=weekhot&p=$1 last;
+        rewrite ^/liuyan/hot7/(\d+)$ /list.top.php?sucaiType=daima&type=weekhot&p=$1 last;
+        #
+        # 月最热页面
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/hot30$ http://www.gexing.com/$1/hot30/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|tupian|wenzi|shengyin|shipin)/hot30/$ /list.top.php?sucaiType=$1&type=monthhot last;
+        rewrite ^/qq(qianming|wangming|fenzu)/hot30/$ /list.top.php?sucaiType=$1&type=monthhot last;
+        rewrite ^/qq(touxiang)/hot30/$ /list.touxiang.php?type=monthhot last;
+        rewrite ^/qqpifu/hot30/$  /list.top.php?sucaiType=qqpifu&type=monthhot last;
+        rewrite ^/pifu/hot30/$ /list.top.php?sucaiType=kongjianpifu&type=monthhot last;
+        rewrite ^/liuyan/hot30/$ /list.top.php?sucaiType=daima&type=monthhot last;
+        #
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan)/hot30/(\d+)/$ http://www.gexing.com/$1/hot30/$2 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang)/hot30/(\d+)$ /list.top.php?sucaiType=$1&type=monthhot&p=$2 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/hot30/(\d+)$ /list.top.php?sucaiType=$1&type=monthhot&p=$2 last;
+        rewrite ^/qq(touxiang)/hot30/(\d+)$ /list.touxiang.php?type=monthhot&p=$2 last;
+        rewrite ^/qqpifu/hot30/(\d+)$ /list.top.php?sucaiType=qqpifu&type=monthhot&p=$1 last;
+        rewrite ^/pifu/hot30/(\d+)$ /list.top.php?sucaiType=kongjianpifu&type=monthhot&p=$1 last;
+        rewrite ^/liuyan/hot30/(\d+)$ /list.top.php?sucaiType=daima&type=monthhot&p=$1 last;
+        #
+        # 搜索页面 start 
+        # 热门
+
+
+        #/shaitu/t/%E8%87%AA%E6%8B%8D------> /zipai
+        rewrite ^/shaitu/t/(自拍|%E8%87%AA%E6%8B%8D)$ http://www.gexing.com/zipai/ permanent;
+        rewrite ^/shaitu/t/(自拍|%E8%87%AA%E6%8B%8D)/(\d+)$ http://www.gexing.com/zipai/$2 permanent;
+        rewrite ^/shaitu/t/(壁纸|%E5%A3%81%E7%BA%B8)$ http://www.gexing.com/bizhi/ permanent;
+        rewrite ^/shaitu/t/(壁纸|%E5%A3%81%E7%BA%B8)/(\d+)$ http://www.gexing.com/bizhi/$2 permanent;
+
+
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/t/([^/]+)/$ http://www.gexing.com/$1/t/$2 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/t/([^/]+)$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/t/([^/]+)$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2 last;
+        rewrite ^/qq(touxiang)/t/([^/]+)$ /list.touxiang.php?type=tag&tag=$2 last;
+        rewrite ^/pifu/t/([^/]+)$ /list.tagsearch.php?sucaiType=kongjianpifu&type=tag&tag=$1 last;
+        rewrite ^/liuyan/t/([^/]+)$ /list.tagsearch.php?sucaiType=daima&type=tag&tag=$1 last;
+        # 热门带分页
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/t/([^/]+)/(\d+)/$ http://www.gexing.com/$1/t/$2/$3 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/t/([^/]+)/(\d+)$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&p=$3 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/t/([^/]+)/(\d+)$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&p=$3 last;
+        rewrite ^/qq(touxiang)/t/([^/]+)/(\d+)$ /list.touxiang.php?type=tag&tag=$2&p=$3 last;
+        rewrite ^/pifu/t/([^/]+)/(\d+)$ /list.tagsearch.php?sucaiType=kongjianpifu&type=tag&tag=$1&p=$2 last;
+        rewrite ^/liuyan/t/([^/]+)/(\d+)$ /list.tagsearch.php?sucaiType=daima&type=tag&tag=$1&p=$2 last;
+        
+        # 最新
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/t/([^/]+)/new$ http://www.gexing.com/$1/t/$2/new/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/t/([^/]+)/new/$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=new last;
+        rewrite ^/qq(qianming|wangming|fenzu)/t/([^/]+)/new/$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=new last;
+        rewrite ^/qq(touxiang)/t/([^/]+)/new/$ /list.touxiang.php?type=tag&tag=$2&order=new last;
+        rewrite ^/pifu/t/([^/]+)/new/$ /list.tagsearch.php?sucaiType=kongjianpifu&type=tag&tag=$1&order=new last;
+        rewrite ^/liuyan/t/([^/]+)/new/$ /list.tagsearch.php?sucaiType=daima&type=tag&tag=$1&order=new last;
+        
+        # 最新带分页
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/t/([^/]+)/new/(\d+)/$ http://www.gexing.com/$1/t/$2/new/$3 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/t/([^/]+)/new/(\d+)$  /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=new&p=$3 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/t/([^/]+)/new/(\d+)$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=new&p=$3  last;
+        rewrite ^/qq(touxiang)/t/([^/]+)/new/(\d+)$ /list.touxiang.php?type=tag&tag=$2&order=new&p=$3  last;
+        rewrite ^/pifu/t/([^/]+)/new/(\d+)$ /list.tagsearch.php?sucaiType=kongjianpifu&type=tag&tag=$1&order=new&p=$2 last;
+        rewrite ^/liuyan/t/([^/]+)/new/(\d+)$ /list.tagsearch.php?sucaiType=daima&type=tag&tag=$1&order=new&p=$2 last;
+        #
+        # 推荐
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/t/([^/]+)/good$ http://www.gexing.com/$1/t/$2/good/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/t/([^/]+)/good/$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=good last;
+        rewrite ^/qq(qianming|wangming|fenzu)/t/([^/]+)/good/$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=good last;
+        rewrite ^/qq(touxiang)/t/([^/]+)/good/$ /list.touxiang.php?type=tag&tag=$2&order=good last;
+        rewrite ^/pifu/t/([^/]+)/good/$ /list.tagsearch.php?sucaiType=kongjianpifu&type=tag&tag=$1&order=good last;
+        rewrite ^/liuyan/t/([^/]+)/good/$ /list.tagsearch.php?sucaiType=daima&type=tag&tag=$1&order=good last;
+        # 推荐带分页
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/t/([^/]+)/good/(\d+)/$ http://www.gexing.com/$1/t/$2/good/$3 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/t/([^/]+)/good/(\d+)$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=good&p=$3 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/t/([^/]+)/good/(\d+)$ /list.tagsearch.php?sucaiType=$1&type=tag&tag=$2&order=good&p=$3  last;
+        rewrite ^/qq(touxiang)/t/([^/]+)/good/(\d+)$ /list.touxiang.php?type=tag&tag=$2&order=good&p=$3  last;
+        rewrite ^/pifu/t/([^/]+)/good/(\d+)$ /list.tagsearch.php?sucaiType=kongjianpifu&type=tag&tag=$1&order=good&p=$2 last;
+        rewrite ^/liuyan/t/([^/]+)/good/(\d+)$ /list.tagsearch.php?sucaiType=daima&type=tag&tag=$1&order=good&p=$2 last;
+
+        
+        # 搜索页面 end
+        # 全文搜索页面 start
+        #
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/s/([^/]+)/$ http://www.gexing.com/$1/s/$2 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/s/([^/]+)$ /search.php?sucaiType=$1&type=search&tag=$2 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/s/([^/]+)$ /search.php?sucaiType=$1&type=search&tag=$2 last;
+        rewrite ^/qq(touxiang)/s/([^/]+)$ /list.touxiang.php?type=search&tag=$2 last;
+        rewrite ^/pifu/s/([^/]+)$ /search.php?sucaiType=kongjianpifu&type=search&tag=$1 last;
+        rewrite ^/liuyan/s/([^/]+)$ /search.php?sucaiType=daima&type=search&tag=$1 last;
+        # 搜索带分页
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/s/([^/]+)/(\d+)/$ http://www.gexing.com/$1/s/$2/$3 permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/s/([^/]+)/(\d+)$ /search.php?sucaiType=$1&type=search&tag=$2&p=$3 last;
+        rewrite ^/qq(qianming|wangming|fenzu)/s/([^/]+)/(\d+)$ /search.php?sucaiType=$1&type=search&tag=$2&p=$3 last;
+        rewrite ^/qq(touxiang)/s/([^/]+)/(\d+)$ /list.touxiang.php?type=search&tag=$2&p=$3 last;
+        rewrite ^/pifu/s/([^/]+)/(\d+)$ /search.php?sucaiType=kongjianpifu&type=search&tag=$1&p=$2 last;
+        rewrite ^/liuyan/s/([^/]+)/(\d+)$ /search.php?sucaiType=daima&type=search&tag=$1&p=$2 last;
+        #
+        # 全文搜索页面 end
+        #
+        # 日记收藏页
+        rewrite ^/(shaitu|bizhi|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|index|tupian|wenzi|shengyin|shipin)/sc$ http://www.gexing.com/$1/sc/ permanent;
+        rewrite ^/(shaitu|bizhi|riji|fengmian|yinxiang|qqpifu|index|tupian|wenzi|shengyin|shipin)/sc/$ /favor.$1.php last;
+        rewrite ^/qq(touxiang|qianming|wangming|fenzu)/sc/$ /favor.$1.php last;
+        rewrite ^/pifu/sc/$ /favor.kongjianpifu.php last;
+        rewrite ^/liuyan/sc/$ /favor.daima.php  last;
+        
+        # 动态页&&详情页
+        rewrite ^/dongtai/(\d+)$ /dongtai.php?p=$1 last;
+        rewrite ^/dongtai/info/(\d+)$ /dongtai.php?action=info&id=$1 last;
+        
+        #
+        rewrite ^/(shaitu|bizhi|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/sc/(\d+)/$ http://www.gexing.com/$1/sc/$2 permanent;
+        rewrite ^/(shaitu|bizhi|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/sc/(\d+)$ /favor.$1.php?p=$2 last;
+        rewrite ^/qq(touxiang|qianming|wangming|fenzu)/sc/(\d+)$ /favor.$1.php?p=$2 last;
+        rewrite ^/pifu/sc/(\d+)$ /favor.kongjianpifu.php?p=$1 last;
+        rewrite ^/liuyan/sc/(\d+)$ /favor.daima.php?p=$1 last;
+        
+        # 0824 user.comment.php
+        rewrite ^/u/pl$ http://www.gexing.com/u/pl/ permanent;
+        rewrite ^/u/pl/$ /user.comment.php last;
+        rewrite ^/u/pl/(\d+)$ /user.comment.php?p=$1 last;
+        
+        # 日记收藏晒图页
+        rewrite ^/shaitu/sc$ http://www.gexing.com/shaitu/sc/ permanent;
+        rewrite ^/shaitu/sc/$ /list.shaitu.php?type=myfav last;
+        #
+        rewrite ^/shaitu/sc/(\d+)/$ http://www.gexing.com/shaitu/sc/$1 permanent;
+        rewrite ^/shaitu/sc/(\d+)$ /list.shaitu.php?type=myfav&p=$1 last;
+        #
+        #
+        
+        # 栏目发布页
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/add$ http://www.gexing.com/$1/add/ permanent;
+        rewrite ^/(riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/add/$ /post.$1.php last;
+        rewrite ^/(shaitu|bizhi|zipai)/add/$ /post.shaitu.php?type=$1 last;
+        rewrite ^/qq(touxiang|fenzu)/add/$ /post.$1.php last;
+        rewrite ^/pifu/add/$ /post.kongjianpifu.php last;
+        rewrite ^/liuyan/add/$ /post.daima.php last;
+        
+        # 终极页
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin)/(\d+).html$ /detail.$1.php?id=$2 last;
+        rewrite ^/qq(touxiang|qianming|wangming|fenzu)/(\d+).html$ /detail.$1.php?id=$2 last;
+        rewrite ^/qqtouxiang/(\d+)_(\d+).html$ /detail.touxiang.php?id=$1&p=$2 last;
+        rewrite ^/pifu/(\d+).html$ /detail.kongjianpifu.php?id=$1 last;
+        rewrite ^/liuyan/(\d+).html$ /detail.daima.php?id=$1 last;
+	rewrite ^/(tupian|wenzi|shengyin)/(.*)-(\d+).html$ /detail.$1.php?type=$2&id=$3 last;
+        
+        # 日志主页 默认晒图
+        rewrite ^/(u|u/)$ http://z.gexing.com last;
+        rewrite ^/u/(\d+)$ http://z.gexing.com/u/$1 last;
+        rewrite ^/u/(\d+)/$ http://z.gexing.com/u/$1 last;
+        rewrite ^/u/(\d+)/(\d+)/$ http://www.gexing.com/u/$1/$2 permanent;
+        rewrite ^/u/(\d+)/(\d+)$ /user.home.php?uid=$1&p=$2 last;
+        
+        # home页 频道首页
+        rewrite ^/u/(\d+)/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|fs|gz|ly|tz|fb|setavatar|tupian|wenzi|shengyin|shipin)$ http://www.gexing.com/u/$1/$2/ permanent;
+        rewrite ^/u/(\d+)/setavatar/$ /setting.php?uid=$1&action=setavatar last;
+        rewrite ^/u/(\d+)/setavatar/(\d+)$ /setting.php?uid=$1&action=setavatar&p=$2 last;
+        rewrite ^/u/(\d+)/setpassword/$ /setting.php?uid=$1&action=setpassword last;
+        rewrite ^/u/(\d+)/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/$ /user.$2.php?uid=$1 last;
+        rewrite ^/u/(\d+)/qq(touxiang|qianming|wangming|fenzu)/$ /user.$2.php?uid=$1 last;
+        rewrite ^/u/(\d+)/pifu/$ /user.kongjianpifu.php?uid=$1 last;
+        rewrite ^/u/(\d+)/liuyan/$ /user.daima.php?uid=$1 last;
+        rewrite ^/u/(\d+)/fs/$ /user.fans.php?uid=$1 last;
+        rewrite ^/u/(\d+)/gz/$ /user.follow.php?uid=$1 last;
+        rewrite ^/u/(\d+)/ly/$ /user.leaveword.php?uid=$1 last;
+        rewrite ^/u/(\d+)/tz/$ /user.notice.php?uid=$1 last;
+        rewrite ^/u/(\d+)/fb/$ /user.index.php?uid=$1 last;
+        
+        # home页 带分页
+        rewrite ^/u/(\d+)/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|fs|gz|ly|tz|fb|setavatar|tupian|wenzi|shengyin|shipin)/(\d+)/$ http://www.gexing.com/u/$1/$2/$3 permanent;
+        rewrite ^/u/(\d+)/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/(\d+)$ /user.$2.php?uid=$1&p=$3 last;
+        rewrite ^/u/(\d+)/qq(touxiang|qianming|wangming|fenzu)/(\d+)$ /user.$2.php?uid=$1&p=$3 last;
+        rewrite ^/u/(\d+)/pifu/(\d+)$ /user.kongjianpifu.php?uid=$1&p=$2 last;
+        rewrite ^/u/(\d+)/liuyan/(\d+)$ /user.daima.php?uid=$1&p=$2 last;
+        rewrite ^/u/(\d+)/fs/(\d+)$ /user.fans.php?uid=$1&p=$2 last;
+        rewrite ^/u/(\d+)/gz/(\d+)$ /user.follow.php?uid=$1&p=$2 last;
+        rewrite ^/u/(\d+)/ly/(\d+)$ /user.leaveword.php?uid=$1&p=$2 last;
+        rewrite ^/u/(\d+)/tz/(\d+)$ /user.notice.php?uid=$1&p=$2 last;
+        
+        # 粉丝列表+关注列表
+        #rewrite ^/u/(\d+)/fs/(\d+)$ /user.fans.php?uid=$1&p=$2 last;
+        #rewrite ^/u/(\d+)/gz/(\d+)$ /user.follow.php?uid=$1&p=$2 last;
+        
+        # 我的资料
+        rewrite ^/u/(\d+)/set/$ /setting.php?uid=$1 last;
+        
+        # 编辑日记和晒图
+        rewrite ^/(shaitu|riji)/(\d+)/edit$ /post.$1.php?action=edit&id=$2 last;
+ 
+        # About site
+        rewrite ^/about/(help|about|contact|job|licence|feedback)$ http://www.gexing.com/about/$1/ permanent;
+        rewrite ^/about/(help|about|contact|job)/$ /help.php?action=$1 last;
+        rewrite ^/about/publishlicence/$ /help.php?action=publishLicence last;
+        rewrite ^/about/licence/$ /help.php?action=service last;
+        rewrite ^/about/feedback/(\d*)/$ /tucao.php?p=$1 last;
+        rewrite ^/about/feedback/(\d*)$ /tucao.php?p=$1 last;
+        rewrite ^/abaca/log/slow.20120708$ /?action=404 last;
+        
+        # Tag
+        rewrite ^/(shaitu|bizhi|zipai|qqpifu|fengmian|riji|yinxiang|qqtouxiang|qqqianming|qqwangming|qqfenzu|pifu|liuyan|tupian|wenzi|shengyin|shipin)/(tag|tag/|t)$ http://www.gexing.com/$1/t/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|qqpifu|fengmian|riji|yinxiang|tupian|wenzi|shengyin|shipin)/t/$ /list.tag.php?type=$1 last;
+        rewrite ^/qq(touxiang|qianming|wangming|fenzu)/t/$ /list.tag.php?type=$1 last;
+        rewrite ^/pifu/t/$ /list.tag.php?type=kongjianpifu last;
+        rewrite ^/liuyan/t/$ /list.tag.php?type=daima last;
+ 
+ 
+        ### 0830 tm ###
+        rewrite ^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/tm$ http://www.gexing.com/$1/tm/ permanent;
+        rewrite ^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/tm/$ /tm.index.php?sc=$1 last;     
+        rewrite ^/qq(touxiang|qianming|wangming|fenzu)/tm/$ /tm.index.php?sc=$1 last;       
+        rewrite ^/pifu/tm/$ /tm.index.php?sc=kongjianpifu last;     
+        rewrite ^/liuyan/tm/$ /tm.index.php?sc=daima last;          
+ 
+        rewrite "^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/tm/(\d{6})/$" http://www.gexing.com/$1/tm/$2 permanent;   
+        rewrite "^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/tm/(\d{6})$" /tm.index.php?sc=$1&date=$2 last;    
+        rewrite "^/qq(touxiang|qianming|wangming|fenzu)/tm/(\d{6})$" /tm.index.php?sc=$1&date=$2 last;      
+        rewrite "^/pifu/tm/(\d{6})$" /tm.index.php?sc=kongjianpifu&date=$1 last;    
+        rewrite "^/liuyan/tm/(\d{6})$" /tm.index.php?sc=daima&date=$1 last;                 
+                    
+                    
+        rewrite "^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/tm/(\d{8})/$" http://www.gexing.com/$1/tm/$2 permanent;
+        rewrite "^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/tm/(\d{8})$" /tm.$1.php?date=$2 last;
+        rewrite "^/qq(touxiang|qianming|wangming|fenzu)/tm/(\d{8})$" /tm.$1.php?date=$2 last;
+        rewrite "^/pifu/tm/(\d{8})$" /tm.kongjianpifu.php?date=$1 last;
+        rewrite "^/liuyan/tm/(\d{8})$" /tm.daima.php?date=$1 last;
+                
+        rewrite "^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/tm/(\d{8})/(/d+)/$" http://www.gexing.com/$1/tm/$2/$3 permanent;
+        rewrite "^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/tm/(\d{8})/(\d+)$" /tm.$1.php?date=$2&p=$3 last;
+        rewrite "^/qq(touxiang|qianming|wangming|fenzu)/tm/(\d{8})/(\d+)$" /tm.$1.php?date=$2&p=$3 last;
+        rewrite "^/pifu/tm/(\d{8})/(\d+)$" /tm.kongjianpifu.php?date=$1&p=$2 last;
+        rewrite "^/liuyan/tm/(\d{8})/(\d+)$" /tm.daima.php?date=$1&p=$2 last;
+                
+                
+        rewrite "^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/tm/(\d{8})/t/(.*)/(\d+)/$" http://www.gexing.com/$1/tm/$2/t/$3/$4 permanent;
+        rewrite "^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/tm/(\d{8})/t/(.*)/(\d+)$" /tm.$1.php?date=$2&tag=$3&p=$4 last;
+        rewrite "^/qq(touxiang|qianming|wangming|fenzu)/tm/(\d{8})/t/(.*)/(\d+)$" /tm.$1.php?date=$2&tag=$3&p=$4 last;
+        rewrite "^/pifu/tm/(\d{8})/t/(.*)/(\d+)$" /tm.kongjianpifu.php?date=$1&tag=$2&p=$3 last;
+        rewrite "^/liuyan/tm/(\d{8})/t/(.*)/(\d+)$" /tm.daima.php?date=$1&tag=$2&p=$3 last;
+                
+        rewrite "^/(shaitu|bizhi|zipai|riji|qqtouxiang|qqqianming|qqwangming|qqfenzu|qqpifu|pifu|fengmian|yinxiang|liuyan|tupian|wenzi|shengyin|shipin)/tm/(\d{8})/t/(.*)/$" http://www.gexing.com/$1/tm/$2/t/$3 permanent;
+        rewrite "^/(shaitu|bizhi|zipai|riji|fengmian|yinxiang|qqpifu|tupian|wenzi|shengyin|shipin)/tm/(\d{8})/t/(.*)$" /tm.$1.php?date=$2&tag=$3 last;
+        rewrite "^/qq(touxiang|qianming|wangming|fenzu)/tm/(\d{8})/t/(.*)$" /tm.$1.php?date=$2&tag=$3 last;
+        rewrite "^/pifu/tm/(\d{8})/t/(.*)$" /tm.kongjianpifu.php?date=$1&tag=$2 last;
+        rewrite "^/liuyan/tm/(\d{8})/t/(.*)$" /tm.daima.php?date=$1&tag=$2 last;
+ 
+        ### 0831 tool ###
+        rewrite ^/tool$ http://www.gexing.com/tool/ permanent;       
+        rewrite ^/tool/$ /tool.php last;       
+        rewrite ^/tool/(zhuanhuan|biaoqing|daquan)$ http://www.gexing.com/tool/$1/ permanent;
+        rewrite ^/tool/(zhuanhuan|biaoqing|daquan)/$ /tool-$1.php last;       
+ 
+        ####0905####
+        rewrite ^/qq(touxiang|qianming|wangming)$ http://www.gexing.com/qq$1/ permanent;
+        rewrite ^/qq(touxiang|qianming|wangming)/$ /index.$1.php last;
+        rewrite ^/qq(touxiang|qianming|wangming)/good$ http://www.gexing.com/qq$1/good/ permanent;
+        rewrite ^/qq(qianming|wangming)/good/$ /list.tagsearch.php?sucaiType=$1 last;
+        rewrite ^/qq(touxiang)/good/$ /list.touxiang.php last;
+        rewrite ^/qq(touxiang|qianming|wangming)/good/(\d+)/$ http://www.gexing.com/qq$1/good/$2 permanent;
+        rewrite ^/qq(qianming|wangming)/good/(\d+)$ /list.tagsearch.php?sucaiType=$1&p=$2 last;
+        rewrite ^/qq(touxiang)/good/(\d+)$ /list.touxiang.php?p=$2 last;
+        rewrite ^/qq(touxiang|qianming|wangming)/fav$ http://www.gexing.com/qq$1/fav/ permanent;
+        rewrite ^/qq(qianming|wangming)/fav/$ /search.php?sucaiType=$1&type=favtop last;
+        rewrite ^/qq(touxiang)/fav/$ /list.touxiang.php?type=favtop last;
+        rewrite ^/qq(touxiang|qianming|wangming)/fav/(\d+)/$ http://www.gexing.com/qq$1/fav/$2 permanent;
+        rewrite ^/qq(qianming|wangming)/fav/(\d+)$ /search.php?sucaiType=$1&type=favtop&p=$2 last;
+        rewrite ^/qq(touxiang)/fav/(\d+)$ /list.touxiang.php?type=favtop&p=$2 last;
+ 
+        ####0922#####
+        rewrite ^/zt$ http://www.gexing.com/zt/ permanent;
+        rewrite ^/zt/$ /zhuanti.list.php?type=new last;
+        rewrite ^/zt/(\d+)/$ http://www.gexing.com/zt/$1 permanent;
+        rewrite ^/zt/(\d+)$ /zhuanti.list.php?type=new&p=$1 last;
+        rewrite ^/zt/hot$ http://www.gexing.com/zt/hot/ permanent;
+        rewrite ^/zt/hot/$ /zhuanti.list.php?type=hot last;
+        rewrite ^/zt/hot/(\d+)/$ http://www.gexing.com/zt/hot/$1 permanent;
+
+        rewrite ^/zt/hot/(\d+)$ /zhuanti.list.php?type=hot&p=$1 last;
+        rewrite ^/zt/qq(touxiang|qianming|wangming)$ http://www.gexing.com/zt/qq$1/ permanent;
+        rewrite ^/zt/qq(touxiang|qianming|wangming)/$ /zhuanti.list.php?type=$1 last;
+        rewrite ^/zt/qq(touxiang|qianming|wangming)/(\d+)/$ http://www.gexing.com/zt/qq$1/$2 permanent;
+        rewrite ^/zt/qq(touxiang|qianming|wangming)/(\d+)$ /zhuanti.list.php?type=$1&p=$2 last;
+        rewrite ^/zt/(shaitu|riji)$ http://www.gexing.com/zt/$1/ permanent;
+        rewrite ^/zt/(shaitu|riji)/$ /zhuanti.list.php?type=$1 last;
+        rewrite ^/zt/(shaitu|riji)/(\d+)/$ http://www.gexing.com/zt/$1/$2 permanent;
+        rewrite ^/zt/(shaitu|riji)/(\d+)$ /zhuanti.list.php?type=$1&p=$2 last;
+        rewrite ^/zt/(shaitu|riji)/(\d+).html$ /zhuanti.detail.php?id=$2&type=$1 last;
+        rewrite ^/zt/qq(touxiang|qianming|wangming)/(\d+).html$ /zhuanti.detail.php?id=$2&type=$1 last;
+
+        ####1018单头像收藏####
+        rewrite ^/qqtouxiang/ssc$ http://www.gexing.com/qqtouxiang/ssc/ permanent;
+        rewrite ^/qqtouxiang/ssc/$ /favor.singletouxiang.php last;
+        rewrite ^/qqtouxiang/ssc/(\d+)/$ http://www.gexing.com/qqtouxiang/ssc/$1 permanent;
+        rewrite ^/qqtouxiang/ssc/(\d+)$ /favor.singletouxiang.php?p=$1 last;
+
+        ####1031单头像排行榜####
+        rewrite ^/qqtouxiang/hots$ /qqtouxiang/hots/ permanent;
+        rewrite ^/qqtouxiang/hots/$ /list.singletouxiang.php last;
+        rewrite ^/qqtouxiang/hots/(\d+)/$ /qqtouxiang/hots/$1 permanent;
+        rewrite ^/qqtouxiang/hots/(\d+)$ /list.singletouxiang.php?p=$1 last;
+
+        ####1129Gexing ++ ####
+        rewrite ^/(touxiang|touxiang/|tx|tx/)$ http://www.gexing.com/qqtouxiang/ permanent;
+        rewrite ^/(qianming|qianming/|qm|qm/)$ http://www.gexing.com/qqqianming/ permanent;
+        rewrite ^/(name|name/|wangming|wangming/)$ http://www.gexing.com/qqwangming/ permanent;
+        rewrite ^/(tt|tt/)$ http://www.gexing.com/shaitu/ permanent;
+        rewrite ^/(qzcode|qzcode/)$ http://www.gexing.com/liuyan/ permanent;
+        rewrite ^/(ziliao|ziliao/)$ http://www.gexing.com/riji/ permanent;
+        rewrite ^/(fenzu|fenzu/)$ http://www.gexing.com/qqfenzu/ permanent;
+        rewrite ^/(bq|bq/)$ http://www.gexing.com/bizhi/ permanent;
+        rewrite ^/(jf|jf/)$ http://www.gexing.com/tool/zhuanhuan/ permanent;
+        rewrite ^/fuwu/qqv.asp$ http://www.gexing.com/tool/ permanent;
+        rewrite ^/fuwu/jfc.asp$ http://www.gexing.com/tool/zhuanhuan/ permanent;
+        rewrite ^/zifu/zifu.asp$ http://www.gexing.com/tool/daquan/ permanent;
+        rewrite ^/more/fenzu.asp$ http://www.gexing.com/qqfenzu/ permanent;
+        rewrite ^/zifu/bushou.asp$ http://www.gexing.com/tool/zhuanhuan/ permanent;
+        rewrite ^/index.asp$ http://www.gexing.com/ permanent;
+        rewrite ^/name/sex2/1.html$ http://www.gexing.com/qqwangming/t/%E6%83%85%E4%BE%A3 permanent;
+        rewrite ^/name/sex0/1.html$ http://www.gexing.com/qqwangming/t/%E5%A5%B3%E7%94%9F permanent;
+        rewrite ^/name/sex1/1.html$ http://www.gexing.com/qqwangming/t/%E7%94%B7%E7%94%9F permanent;
+        rewrite ^/tietu/tietu.asp$ http://www.gexing.com/shaitu/ permanent;
+
+
+	####1219 gengduo####
+        rewrite ^/gengduo$ http://www.gexing.com/gengduo/ permanent;
+        rewrite ^/gengduo/$ /index.gengduo.php last;
+
+        ####130107 xiaohong#####
+        rewrite ^/(game|game/)$ http://xyx.gexing.com/ permanent;
+
+	####130129 guangpu #####
+	rewrite ^/zt/pandian2012/ http://www.gexing.com/zt/pandian2012 permanent;
+	rewrite ^/zt/pandian2012$ /pandian.php last;
+
+	####130320 maji #####
+	rewrite ^/about/yuanze$  http://www.gexing.com/about/yuanze/ permanent;
+	rewrite ^/about/yuanze/$ /help.php?action=yuanze last;
+	rewrite ^/about/shengming$ http://www.gexing.com/about/shengming/ permanent;
+	rewrite ^/about/shengming/$ /help.php?action=shengming last;
+
+	####130325 qiangqiang#####
+	rewrite ^/tupian/t/(.*)/add$ http://www.gexing.com/tupian/t/$1/add/ permanent;
+	rewrite ^/tupian/t/(.*)/add/$ /post.tupian.php?tag=$1 last;
+
+	####130407 maji#########
+	rewrite ^/about/xieyi$  http://www.gexing.com/about/xieyi/ permanent;
+        rewrite ^/about/xieyi/$ /help.php?action=xieyi last;
+        rewrite ^/about/zuzhang$ http://www.gexing.com/about/zuzhang/ permanent;
+        rewrite ^/about/zuzhang/$ /help.php?action=zuzhang last;
+        }
+   }
+
+
+
+##老个性对新个性的跳转
+
+
+######## qqgexing.com ###########
+
+    server {
+       listen      <%= port %>;
+       server_name qqgexing.com;
+       root  /data/www/htdocs/oldsite;
+       index  index.html index.htm index.php;
+
+       #access_log /data/www/logs/www.qqgexing.com-access.log main;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+
+       location   /{
+
+
+        if ($request_filename !~ /bdsitemap\.txt){
+        set $cc 'ok';
+        }
+
+        if ($cc = 'ok'){
+
+        #1029 more/fenzu.asp -------> qqfenzu
+        rewrite ^/more/(.*)$ http://www.gexing.com/qqfenzu/ permanent;
+
+        rewrite ^/(name|NAME)/$ http://www.gexing.com/qqwangming/ permanent;
+        rewrite ^/(name|NAME)$ http://www.gexing.com/qqwangming/ permanent;   ##跳转
+        rewrite ^/(qm|QM)/$ http://www.gexing.com/qqqianming/ permanent;
+        rewrite ^/(qm|QM)$ http://www.gexing.com/qqqianming/ permanent;       ##跳转
+        rewrite ^/(tx|TX)/$ http://www.gexing.com/qqtouxiang/ permanent;
+        rewrite ^/(tx|TX)$ http://www.gexing.com/qqtouxiang/ permanent;       ##跳转
+        rewrite ^/(ziliao|ZILIAO)/$ http://www.gexing.com/riji/ permanent;
+        rewrite ^/(ziliao|ZILIAO)$ http://www.gexing.com/riji/ permanent;     ##跳转
+        rewrite ^/qianming/$  http://www.gexing.com/qqqianming/ permanent;
+        rewrite ^/qianming$  http://www.gexing.com/qqqianming/ permanent;    ##跳转
+        rewrite ^/wangming/$ http://www.gexing.com/qqwangming/ permanent;
+        rewrite ^/wangming$ http://www.gexing.com/qqwangming/ permanent;     ##跳转
+        rewrite ^/touxiang/$ http://www.gexing.com/qqtouxiang/ permanent;
+        rewrite ^/touxiang$ http://www.gexing.com/qqtouxiang/ permanent;     ##跳转
+        rewrite ^/tt/$ http://www.gexing.com/shaitu/ permanent;
+        rewrite ^/tt$ http://www.gexing.com/shaitu/ permanent;               ##跳转
+        rewrite ^/fenzu/$ http://www.gexing.com/qqfenzu/ permanent;
+        rewrite ^/fenzu$ http://www.gexing.com/qqfenzu/ permanent;           ##跳转
+        rewrite ^/pifu/$ http://www.gexing.com/qqpifu/ permanent;
+        rewrite ^/pifu$ http://www.gexing.com/qqpifu/ permanent;             ##跳转
+        rewrite ^/bz/$ http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8 permanent;
+        rewrite ^/bz$ http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8 permanent;     ##跳转
+        rewrite ^/qzcode/$ http://www.gexing.com/liuyan/ permanent;
+        rewrite ^/qzcode$ http://www.gexing.com/liuyan/ permanent;                      ##跳转
+        rewrite ^/jf$ http://www.gexing.com/ permanent;            ##跳转
+        rewrite ^/jf/$ http://www.gexing.com/ permanent;           ##跳转
+        rewrite ^/(.*)$ http://www.gexing.com/$1 permanent;
+        }
+        }
+     }
+
+######## www.qqgexing.com ###########
+    server {
+       listen      <%= port %>; 
+       server_name www.qqgexing.com;
+       root  /data/www/htdocs/oldsite;
+       index  index.html index.htm index.php;
+
+       #access_log /data/www/logs/www.qqgexing.com-access.log main;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        set $aa '';
+        set $bb '';
+        set $cc '';
+        set $dd '';
+
+     location   /{
+
+        if ($query_string ~ ^Page=(\d+)$){
+        rewrite ^/more/fenzu.asp http://www.gexing.com/qqfenzu/50? permanent;  #####
+        }
+
+        if ($query_string ~ ^y=(\d+)\&m=(\d+)$){
+        set $aa $1;
+        set $bb $2;
+        set $cc 'ok';
+        rewrite ^/(ziliao|qianming|wangming|fenzu|qzcode|yinxiang)/list_main.asp /www/$1/${aa}_${bb}.html last;
+        }
+
+        if ($request_filename ~ /bdsitemap\.txt){
+        set $cc 'ok';
+        }
+        if ($cc != 'ok'){
+
+        rewrite ^/more/fenzu.asp$ http://www.gexing.com/qqfenzu/ permanent;  #####
+        rewrite ^/zifu/zifu.asp$ http://www.gexing.com permanent;  #####
+        rewrite ^/zifu/bushou.asp$ http://www.gexing.com permanent;  #####
+        rewrite ^/about/(about|contact).asp$ http://www.gexing.com/about/$1 permanent; 
+        rewrite ^/(name|NAME)/$ http://www.gexing.com/qqwangming/ permanent;
+        rewrite ^/(name|NAME)$ http://www.gexing.com/qqwangming/ permanent;   ##跳转
+        rewrite ^/(qm|QM)/$ http://www.gexing.com/qqqianming/ permanent;
+        rewrite ^/(qm|QM)$ http://www.gexing.com/qqqianming/ permanent;       ##跳转
+        rewrite ^/(tx|TX)/$ http://www.gexing.com/qqtouxiang/ permanent;
+        rewrite ^/(tx|TX)$ http://www.gexing.com/qqtouxiang/ permanent;       ##跳转
+        rewrite ^/(ziliao|ZILIAO)/$ http://www.gexing.com/riji/ permanent;
+        rewrite ^/(ziliao|ZILIAO)$ http://www.gexing.com/riji/ permanent;     ##跳转
+        rewrite ^/qianming/$  http://www.gexing.com/qqqianming/ permanent;
+        rewrite ^/qianming$  http://www.gexing.com/qqqianming/ permanent;    ##跳转
+        rewrite ^/wangming/$ http://www.gexing.com/qqwangming/ permanent;
+        rewrite ^/wangming$ http://www.gexing.com/qqwangming/ permanent;     ##跳转
+        rewrite ^/touxiang/$ http://www.gexing.com/qqtouxiang/ permanent;
+        rewrite ^/touxiang$ http://www.gexing.com/qqtouxiang/ permanent;     ##跳转
+        rewrite ^/tt/$ http://www.gexing.com/shaitu/ permanent;
+        rewrite ^/tt$ http://www.gexing.com/shaitu/ permanent;               ##跳转
+        rewrite ^/fenzu/$ http://www.gexing.com/qqfenzu/ permanent;
+        rewrite ^/fenzu$ http://www.gexing.com/qqfenzu/ permanent;           ##跳转
+        rewrite ^/pifu/$ http://www.gexing.com/qqpifu/ permanent;
+        rewrite ^/pifu$ http://www.gexing.com/qqpifu/ permanent;             ##跳转
+        rewrite ^/bz/$ http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8 permanent;
+        rewrite ^/bz$ http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8 permanent;     ##跳转
+        rewrite ^/qzcode/$ http://www.gexing.com/liuyan/ permanent;
+        rewrite ^/qzcode$ http://www.gexing.com/liuyan/ permanent;                      ##跳转
+        rewrite ^/fuwu/qqv.asp$ http://www.gexing.com/tool/ permanent;
+        rewrite ^/fuwu/wpaqq.asp$ http://www.gexing.com  permanent;     ##跳转
+        rewrite ^/fuwu/jfc.asp$ http://www.gexing.com permanent;  ##跳转
+        rewrite ^/jf$ http://www.gexing.com permanent;            ##跳转
+        rewrite ^/jf/$ http://www.gexing.com permanent;           ##跳转
+        rewrite ^/(.*)$ http://www.gexing.com/$1 permanent;
+        }
+      }
+    }
+
+######### f.qqgexing.com #############
+
+    server {
+       listen      <%= port %>; 
+       server_name f.qqgexing.com;
+       root  /data/www/htdocs/oldsite/f;
+       index  index.html index.htm index.php;
+
+       #access_log /data/www/logs/www.qqgexing.com-access.log main;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+
+       location   /{
+
+        rewrite ^/yinxiang$ http://www.gexing.com/yinxiang/ permanent;                           ##### 后加
+        #rewrite ^/yinxiang/$ http://www.gexing.com/yinxiang/ permanent;                           ##### 后加
+
+        rewrite ^/nick/fenlei/sex1/1.html http://www.gexing.com/qqwangming/t/%E7%94%B7%E7%94%9F permanent;        ##跳转
+        rewrite ^/nick/fenlei/sex0/1.html http://www.gexing.com/qqwangming/t/%E5%A5%B3%E7%94%9F permanent;        ##跳转
+        rewrite ^/nick/fenlei/sex2/1.html http://www.gexing.com/qqwangming/t/%e6%83%85%e4%be%a3 permanent;
+        rewrite ^/nick/fenlei/sex010/1.html http://www.gexing.com/qqwangming/ permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_top/1.html http://www.gexing.com/riji/new/ permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f1/1.html http://www.gexing.com/riji/t/%E6%83%85%E6%84%9F permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f2/1.html http://www.gexing.com/riji/t/%E7%88%B1%E6%83%85 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f7/1.html http://www.gexing.com/riji/t/%E6%90%9E%E7%AC%91 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f10/1.html http://www.gexing.com/riji/t/%E5%93%B2%E7%90%86 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f35/1.html http://www.gexing.com/riji/t/%E4%BC%A4%E6%84%9F permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f52/1.html http://www.gexing.com/riji/t/%E8%8A%82%E6%97%A5 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p0/1.html http://www.gexing.com/riji/hot7/ permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p1/1.html http://www.gexing.com/riji/ permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p2/1.html http://www.gexing.com/riji/t/%E7%88%B1%E6%83%85 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p35/1.html http://www.gexing.com/riji/t/%E4%BC%A4%E6%84%9F permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/(fp3|fp6)/1.html http://www.gexing.com/riji/hot7/ permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/fp5/1.html http://www.gexing.com/riji/hot24/ permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/fp3/1.html http://www.gexing.com/riji/hot7/ permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/fp7/1.html http://www.gexing.com/riji/ permanent;        ##跳转
+        rewrite ^/(qm|QM)/new1/1.html  http://www.gexing.com/qqqianming/t/%E4%BC%A4%E6%84%9F permanent;
+        rewrite ^/(qm|QM)/new2/1.html  http://www.gexing.com/qqqianming/t/%E6%83%85%E4%BE%A3 permanent;
+        rewrite ^/(qm|QM)/new3/1.html  http://www.gexing.com/qqqianming/t/%E4%B8%AA%E6%80%A7 permanent;
+        rewrite ^/(qm|QM)/new4/1.html  http://www.gexing.com/qqqianming/hot7/ permanent;
+        rewrite ^/(qm|QM)/fenlei/f2/1.html  http://www.gexing.com/qqqianming/t/%E4%BC%A4%E6%84%9F permanent;
+        rewrite ^/(qm|QM)/fenlei/f3/1.html  http://www.gexing.com/qqqianming/t/%E7%88%B1%E6%83%85 permanent;
+        rewrite ^/(qm|QM)/fenlei/f12/1.html  http://www.gexing.com/qqqianming/t/%E8%AF%97%E8%AF%8D permanent;
+        rewrite ^/(qm|QM)/fenlei/f20/1.html  http://www.gexing.com/qqqianming/t/%E6%83%85%E4%BE%A3 permanent;
+        rewrite ^/(qm|QM)/fenlei/f6/1.html  http://www.gexing.com/qqqianming/t/%E4%B8%AA%E6%80%A7 permanent;
+        rewrite ^/(qm|QM)/fenlei/f14/1.html  http://www.gexing.com/qqqianming/t/%E7%A5%9D%E7%A6%8F permanent;
+        rewrite ^/(qm|QM)/fenlei/f8/1.html  http://www.gexing.com/qqqianming/t/%E6%90%9E%E7%AC%91 permanent;
+        rewrite ^/(qm|QM)/fenlei/f10/1.html  http://www.gexing.com/qqqianming/t/%E5%93%B2%E7%90%86 permanent;
+        rewrite ^/(qm|QM)/fenlei/(paihang3|paihang7)/1.html  http://www.gexing.com/qqqianming/hot7/ permanent;
+        rewrite ^/(qm|QM)/fenlei/paihang5/1.html  http://www.gexing.com/qqqianming/hot24/ permanent;
+        rewrite ^/(qm|QM)/fenlei/paihang3/1.html  http://www.gexing.com/qqqianming/hot7/ permanent;
+        rewrite ^/wangming/(new0|ph01|ph02|ph03)/1.html http://www.gexing.com/qqwangming/t/%E5%A5%B3%E7%94%9F permanent;
+        rewrite ^/wangming/(new1|ph11|ph12|ph13)/1.html http://www.gexing.com/qqwangming/t/%E7%94%B7%E7%94%9F permanent;
+        rewrite ^/wangming/(new2|ph21|ph22|ph23)/1.html http://www.gexing.com/qqwangming/t/%E6%83%85%E4%BE%A3 permanent;
+        rewrite ^/fenzu/fenlei/f4/1.html  http://www.gexing.com/qqfenzu/t/%E4%BC%A4%E6%84%9F permanent;
+        rewrite ^/fenzu/fenlei/f6/1.html  http://www.gexing.com/qqfenzu/t/%E6%83%85%E4%BE%A3 permanent;
+        rewrite ^/fenzu/fenlei/f2/1.html  http://www.gexing.com/qqfenzu/t/%E4%B8%AA%E6%80%A7 permanent;
+        rewrite ^/fenzu/fenlei/f8/1.html  http://www.gexing.com/qqfenzu/t/%E6%90%9E%E7%AC%91 permanent;
+        rewrite ^/fenzu/fenlei/f10/1.html  http://www.gexing.com/qqfenzu/hot7/ permanent;
+        rewrite ^/fenzu/new/1.html  http://www.gexing.com/qqfenzu/new/ permanent;
+        rewrite ^/fenzu/fenlei/(defen1|defen2)/1.html  http://www.gexing.com/qqfenzu/hot7/ permanent;
+        rewrite ^/yinxiang/new/1.html http://www.gexing.com/yinxiang/new/ permanent;
+        rewrite ^/qzcode/fenlei/f4/1.html http://www.gexing.com/liuyan/t/%E6%83%85%E6%84%9F permanent;
+        rewrite ^/qzcode/fenlei/f2/1.html http://www.gexing.com/liuyan/t/%E4%B8%AA%E6%80%A7 permanent;
+        rewrite ^/qzcode/fenlei/f8/1.html http://www.gexing.com/liuyan/t/%E7%A5%9D%E7%A6%8F permanent;
+        rewrite ^/qzcode/fenlei/f14/1.html http://www.gexing.com/liuyan/t/%E6%90%9E%E7%AC%91 permanent;
+        rewrite ^/qzcode/fenlei/f16/1.html http://www.gexing.com/liuyan/t/%E4%BA%92%E8%B8%A9 permanent;
+        rewrite ^/qzcode/fenlei/f20/1.html http://www.gexing.com/liuyan/2 permanent;
+        rewrite ^/qzcode/new/1.html http://www.gexing.com/liuyan/new/ permanent;
+        rewrite ^/qzcode/fenlei/(bg1|bg2)/1.html http://www.gexing.com/liuyan/2 permanent;
+        rewrite ^/qzcode/fenlei/liulan/1.html http://www.gexing.com/liuyan/hot7/ permanent;
+        rewrite ^/qzcode/ph/1.html http://www.gexing.com/liuyan/hot7/ permanent;
+
+
+
+        rewrite ^/nick/fenlei/sex1/(\d+).html http://www.gexing.com/qqwangming/t/%E7%94%B7%E7%94%9F/2 permanent;  ##跳转
+        rewrite ^/nick/fenlei/sex0/(\d+).html http://www.gexing.com/qqwangming/t/%E5%A5%B3%E7%94%9F/2 permanent;  ##跳转
+        rewrite ^/nick/fenlei/sex2/(\d+).html http://www.gexing.com/qqwangming/t/%e6%83%85%e4%be%a3/2 permanent;
+        rewrite ^/nick/fenlei/sex010/(\d+).html http://www.gexing.com/qqwangming/2 permanent;
+
+        rewrite ^/(ziliao|ZILIAO)/new_top/(\d+).html http://www.gexing.com/riji/new/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f1/(\d+).html http://www.gexing.com/riji/t/%E6%83%85%E6%84%9F/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f2/(\d+).html http://www.gexing.com/riji/t/%E7%88%B1%E6%83%85/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f7/(\d+).html http://www.gexing.com/riji/t/%E6%90%9E%E7%AC%91/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f10/(\d+).html http://www.gexing.com/riji/t/%E5%93%B2%E7%90%86/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f35/(\d+).html http://www.gexing.com/riji/t/%E4%BC%A4%E6%84%9F/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/fenlei/f52/(\d+).html http://www.gexing.com/riji/t/%E8%8A%82%E6%97%A5/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p0/(\d+).html http://www.gexing.com/riji/hot7/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p1/(\d+).html http://www.gexing.com/riji/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p2/(\d+).html http://www.gexing.com/riji/t/%E7%88%B1%E6%83%85/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/p35/(\d+).html http://www.gexing.com/riji/t/%E4%BC%A4%E6%84%9F/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/(fp3|fp6)/(\d+).html http://www.gexing.com/riji/hot7/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/fp5/(\d+).html http://www.gexing.com/riji/hot24/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/fp3/(\d+).html http://www.gexing.com/riji/hot7/2 permanent;
+        rewrite ^/(ziliao|ZILIAO)/new_ph/fp7/(\d+).html http://www.gexing.com/riji/2 permanent;           ##跳转
+        rewrite ^/(qm|QM)/new/(\d+).html  http://www.gexing.com/qqqianming/new/ permanent;
+        rewrite ^/(qm|QM)/new1/(\d+).html  http://www.gexing.com/qqqianming/t/%E4%BC%A4%E6%84%9F/2 permanent;
+        rewrite ^/(qm|QM)/new2/(\d+).html  http://www.gexing.com/qqqianming/t/%E6%83%85%E4%BE%A3/2 permanent;
+        rewrite ^/(qm|QM)/new3/(\d+).html  http://www.gexing.com/qqqianming/t/%E4%B8%AA%E6%80%A7/2 permanent;
+        rewrite ^/(qm|QM)/new4/(\d+).html  http://www.gexing.com/qqqianming/hot7/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f2/(\d+).html  http://www.gexing.com/qqqianming/t/%E4%BC%A4%E6%84%9F/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f3/(\d+).html  http://www.gexing.com/qqqianming/t/%E7%88%B1%E6%83%85/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f12/(\d+).html  http://www.gexing.com/qqqianming/t/%E8%AF%97%E8%AF%8D/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f20/(\d+).html  http://www.gexing.com/qqqianming/t/%E6%83%85%E4%BE%A3/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f6/(\d+).html  http://www.gexing.com/qqqianming/t/%E4%B8%AA%E6%80%A7/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f14/(\d+).html  http://www.gexing.com/qqqianming/t/%E7%A5%9D%E7%A6%8F/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f8/(\d+).html  http://www.gexing.com/qqqianming/t/%E6%90%9E%E7%AC%91/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/f10/(\d+).html  http://www.gexing.com/qqqianming/t/%E5%93%B2%E7%90%86/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/(paihang3|paihang7)/(\d+).html  http://www.gexing.com/qqqianming/hot7/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/paihang5/(\d+).html  http://www.gexing.com/qqqianming/hot24/2 permanent;
+        rewrite ^/(qm|QM)/fenlei/paihang3/(\d+).html  http://www.gexing.com/qqqianming/hot7/2 permanent;
+        rewrite ^/wangming/(new0|ph01|ph02|ph03)/(\d+).html http://www.gexing.com/qqwangming/t/%E5%A5%B3%E7%94%9F/2 permanent;
+        rewrite ^/wangming/(new1|ph11|ph12|ph13)/(\d+).html http://www.gexing.com/qqwangming/t/%E7%94%B7%E7%94%9F/2 permanent;
+        rewrite ^/wangming/(new2|ph21|ph22|ph23)/(\d+).html http://www.gexing.com/qqwangming/t/%E6%83%85%E4%BE%A3/2 permanent;
+        rewrite ^/fenzu/fenlei/f4/(\d+).html  http://www.gexing.com/qqfenzu/t/%E4%BC%A4%E6%84%9F/2 permanent;
+        rewrite ^/fenzu/fenlei/f6/(\d+).html  http://www.gexing.com/qqfenzu/t/%E6%83%85%E4%BE%A3/2 permanent;
+        rewrite ^/fenzu/fenlei/f2/(\d+).html  http://www.gexing.com/qqfenzu/t/%E4%B8%AA%E6%80%A7/2 permanent;
+        rewrite ^/fenzu/fenlei/f8/(\d+).html  http://www.gexing.com/qqfenzu/t/%E6%90%9E%E7%AC%91/2 permanent;
+        rewrite ^/fenzu/fenlei/f10/(\d+).html  http://www.gexing.com/qqfenzu/hot7/2 permanent;
+        rewrite ^/fenzu/new/(\d+).html  http://www.gexing.com/qqfenzu/new/2 permanent;
+        rewrite ^/fenzu/fenlei/(defen1|defen2)/(\d+).html  http://www.gexing.com/qqfenzu/hot7/2 permanent;
+        rewrite ^/yinxiang/index.asp(.*) http://www.gexing.com/yinxiang/ permanent;
+        rewrite ^/yinxiang/new/(\d+).html http://www.gexing.com/yinxiang/new/2 permanent;
+        rewrite ^/yinxiang/ph/(\d+).html http://www.gexing.com/yinxiang/ permanent;
+        rewrite ^/qzcode/fenlei/f4/(\d+).html http://www.gexing.com/liuyan/t/%E6%83%85%E6%84%9F/2 permanent;
+        rewrite ^/qzcode/fenlei/f2/(\d+).html http://www.gexing.com/liuyan/t/%E4%B8%AA%E6%80%A7/2 permanent;
+        rewrite ^/qzcode/fenlei/f8/(\d+).html http://www.gexing.com/liuyan/t/%E7%A5%9D%E7%A6%8F/2 permanent;
+        rewrite ^/qzcode/fenlei/f14/(\d+).html http://www.gexing.com/liuyan/t/%E6%90%9E%E7%AC%91/2 permanent;
+        rewrite ^/qzcode/fenlei/f16/(\d+).html http://www.gexing.com/liuyan/t/%E4%BA%92%E8%B8%A9/2 permanent;
+        rewrite ^/qzcode/fenlei/f20/(\d+).html http://www.gexing.com/liuyan/2 permanent;
+        rewrite ^/qzcode/new/(\d+).html http://www.gexing.com/liuyan/new/2 permanent;
+        rewrite ^/qzcode/fenlei/(bg1|bg2)/(\d+).html http://www.gexing.com/liuyan/2 permanent;
+        rewrite ^/qzcode/fenlei/liulan/(\d+).html http://www.gexing.com/liuyan/hot7/2 permanent;
+        rewrite ^/qzcode/ph/(\d+).html http://www.gexing.com/liuyan/hot7/2 permanent;
+
+        rewrite ^/(ziliao|ZILIAO)/day/(.*)$  http://www.gexing.com/riji/2 permanent;
+        rewrite ^/(qm|QM)/day/(.*)$ http://www.gexing.com/qqqianming/2 permanent;
+        rewrite ^/wangming/day/(.*)$ http://www.gexing.com/qqwangming/2 permanent;
+        rewrite ^/fenzu/day/(.*)$ http://www.gexing.com/qqfenzu/2 permanent;
+        rewrite ^/yinxiang/day/(.*)$ http://www.gexing.com/yinxiang/hot7/ permanent;
+
+        #留言
+        rewrite ^/qzcode/daima.asp http://www.gexing.com/liuyan/$arg_id.html? permanent;
+        rewrite ^/$ http://www.gexing.com permanent;
+        #rewrite ^/(.*)$ http://www.gexing.com/$1 permanent; // reponse 403
+        }
+  }
+
+
+######### v.qqgexing.com #############
+    server {
+        listen      <%= port %>; 
+        server_name v.qqgexing.com;
+            root   /data/www/htdocs/oldsite/v;
+            index  index.html index.htm index.php;
+
+        #access_log  /data/www/logs/www.qqgexing.com-access.log  main;
+        error_log  /data/www/logs/www.qqgexing.com-error.log ;
+
+        keepalive_timeout  6;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+        set $nwr '';
+        set $pnm '';
+        set $a '';
+        set $b '';
+        set $c '';
+        if ($host ~* "v.qqgexing.com") {
+                 set $nwr o;
+        }
+        if ($query_string ~ ^id=(\d+)$) {
+                 set $nwr "${nwr}k";
+                 set $a $1;
+                 set $b  300000;
+                 set_by_lua $c "return ngx.var.a + ngx.var.b";
+                 set $pnm $c;
+        }
+
+        if ($query_string ~ ^id=(\d+)\&page=(\d+)$) {
+                 set $nwr "${nwr}k2";
+                 set $a $1;
+                 set $b  300000;
+                 set_by_lua $c "return ngx.var.a + ngx.var.b";
+                 set $pnm $c;
+        }
+
+
+        if ($nwr = ok){
+                rewrite ^/bz/picshow.asp http://www.gexing.com/shaitu/${pnm}.html? permanent;
+        }
+
+        if ($nwr = ok2){
+                rewrite ^/bz/picshow.asp http://www.gexing.com/shaitu/${pnm}.html? permanent;
+        }
+
+
+       location   /{
+
+                rewrite ^/(tx|TX)/fenlei/f31/1.html http://www.gexing.com/qqtouxiang/t/%E5%A5%B3%E7%94%9F permanent;
+                rewrite ^/(tx|TX)/fenlei/f31_2/1.html http://www.gexing.com/qqtouxiang/t/%E4%B8%AA%E6%80%A7 permanent;
+
+                rewrite ^/(tx|TX)/fenlei/f33/1.html http://www.gexing.com/qqtouxiang/t/%E5%8F%AF%E7%88%B1 permanent;
+                rewrite ^/(tx|TX)/fenlei/f34/1.html http://www.gexing.com/qqtouxiang/t/%E6%83%85%E4%BE%A3 permanent;
+                rewrite ^/(tx|TX)/fenlei/f35/1.html http://www.gexing.com/qqtouxiang/t/%E9%BB%91%E7%99%BD permanent;
+                rewrite ^/(tx|TX)/fenlei/f36/1.html http://www.gexing.com/qqtouxiang/t/%E5%8A%A8%E6%BC%AB permanent;
+                rewrite ^/(tx|TX)/fenlei/f37/1.html http://www.gexing.com/qqtouxiang/t/%E7%94%B7%E7%94%9F permanent;
+                rewrite ^/(tx|TX)/fenlei/f38/1.html http://www.gexing.com/qqtouxiang/t/%E6%90%9E%E7%AC%91 permanent;
+                rewrite ^/(tx|TX)/fenlei/f42/1.html http://www.gexing.com/qqtouxiang/t/%E6%96%87%E5%AD%97 permanent;
+                rewrite ^/(tx|TX)/fenlei/f50/1.html http://www.gexing.com/qqtouxiang/ permanent;        ##跳转
+                rewrite ^/(tx|TX)/fenlei/f58/1.html http://www.gexing.com/qqtouxiang/hot7/ permanent;
+
+                rewrite ^/(tx|TX)/new/1.html http://www.gexing.com/qqtouxiang/t/%E7%94%B7%E7%94%9F permanent;
+                rewrite ^/(tx|TX)/new2/1.html http://www.gexing.com/qqtouxiang/2 permanent;
+                rewrite ^/(tx|TX)/new3/1.html http://www.gexing.com/qqtouxiang/new/ permanent;
+                rewrite ^/(tx|TX)/new4/1.html http://www.gexing.com/qqtouxiang/t/%E6%83%85%E4%BE%A3 permanent;
+                rewrite ^/(tx|TX)/new5/1.html http://www.gexing.com/qqtouxiang/t/%E5%A5%B3%E7%94%9F permanent;
+
+                rewrite ^/tt/fenlei/f31/1.html http://www.gexing.com/shaitu/ permanent;        ##跳转
+                rewrite ^/tt/fenlei/f32/1.html http://www.gexing.com/shaitu/t/%E6%84%8F%E5%A2%83 permanent;
+                rewrite ^/tt/fenlei/f34/1.html http://www.gexing.com/shaitu/t/%E4%B8%AA%E6%80%A7%E5%8F%A6%E7%B1%BB permanent;
+                rewrite ^/tt/fenlei/f34_2/1.html http://www.gexing.com/shaitu/t/%E5%8F%A6%E7%B1%BB permanent;
+
+                rewrite ^/tt/fenlei/f35/1.html http://www.gexing.com/shaitu/t/%E6%BD%AE%E6%B5%81 permanent;
+                rewrite ^/tt/fenlei/f36/1.html http://www.gexing.com/shaitu/t/%E8%90%8C%E7%89%A9 permanent;
+                rewrite ^/tt/fenlei/f37/1.html http://www.gexing.com/qqpifu/ permanent;        ##跳转
+                rewrite ^/tt/fenlei/f39/1.html http://www.gexing.com/shaitu/t/%E8%87%AA%E6%8B%8D permanent;
+                rewrite ^/tt/fenlei/f40/1.html http://www.gexing.com/shaitu/t/%E6%96%87%E5%AD%97 permanent;
+                rewrite ^/tt/fenlei/f52/1.html http://www.gexing.com/shaitu/hot/ permanent;
+
+                rewrite ^/tt/p1/1.html http://www.gexing.com/shaitu/t/%E6%96%87%E5%AD%97 permanent;
+                rewrite ^/tt/p2/1.html http://www.gexing.com/shaitu/t/%E6%BD%AE%E6%B5%81 permanent;
+                rewrite ^/tt/p3/1.html http://www.gexing.com/shaitu/t/%E7%BA%A2%E4%BA%BA permanent;
+                rewrite ^/tt/p4/1.html http://www.gexing.com/shaitu/2 permanent;
+                rewrite ^/tt/new2/1.html http://www.gexing.com/shaitu/new/ permanent;
+                rewrite ^/tt/new3/1.html http://www.gexing.com/shaitu/hot/ permanent;
+                rewrite ^/tt/fenlei/paihang1/1.html http://www.gexing.com/shaitu/ permanent;
+
+                rewrite ^/pifu/fenlei/f71/1.html  http://www.gexing.com/qqpifu/t/%E4%BC%A4%E6%84%9F permanent;
+                rewrite ^/pifu/fenlei/f72/1.html  http://www.gexing.com/qqpifu/t/%E5%8F%AF%E7%88%B1 permanent;
+                rewrite ^/pifu/fenlei/f73/1.html  http://www.gexing.com/pifu/2 permanent;
+                rewrite ^/pifu/fenlei/f74/1.html  http://www.gexing.com/pifu/t/%E9%97%AA%E5%9B%BE permanent;
+                rewrite ^/pifu/fenlei/f75/1.html  http://www.gexing.com/fengmian/2 permanent;
+                rewrite ^/pifu/new1/1.html  http://www.gexing.com/qqpifu/new/ permanent;
+                rewrite ^/pifu/new2/1.html  http://www.gexing.com/qqpifu/hot7/ permanent;
+                rewrite ^/pifu/new3/1.html  http://www.gexing.com/pifu/ permanent;
+                rewrite ^/pifu/new4/1.html  http://www.gexing.com/pifu/t/%E9%97%AA%E5%9B%BE permanent;
+
+                rewrite ^/bz/fenlei/(f4|f88)/1.html  http://www.gexing.com/shaitu/t/%E5%8D%A1%E9%80%9A permanent;
+                rewrite ^/bz/fenlei/(f3|f85)/1.html  http://www.gexing.com/shaitu/t/%E7%BE%8E%E5%A5%B3 permanent;
+                rewrite ^/bz/fenlei/(f5|f89)/1.html  http://www.gexing.com/shaitu/t/%E5%B9%BF%E5%91%8A permanent;
+                rewrite ^/bz/fenlei/(f6|f93)/1.html  http://www.gexing.com/shaitu/t/%E7%94%B5%E5%BD%B1 permanent;
+                rewrite ^/bz/fenlei/(f7|f97)/1.html  http://www.gexing.com/shaitu/t/%E7%BE%8E%E9%A3%9F permanent;
+                rewrite ^/bz/fenlei/(f1|f80|f81|f82)/1.html  http://www.gexing.com/shaitu/t/%E9%A3%8E%E6%99%AF permanent;
+                rewrite ^/bz/fenlei/(f2|f83)/1.html  http://www.gexing.com/shaitu/t/%E5%8A%A8%E7%89%A9 permanent;
+                rewrite ^/bz/fenlei/f8/1.html  http://www.gexing.com/shaitu/t/%E7%94%B5%E8%84%91 permanent;
+                rewrite ^/bz/fenlei/(f10|f103|paihang1|paihang2|paihang5)/1.html  http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8 permanent;
+                rewrite ^/bz/new/1.html  http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8 permanent;
+                rewrite ^/bz/fenlei/f87/1.html  http://www.gexing.com/shaitu/t/%E5%8A%A8%E6%BC%AB permanent;
+                rewrite ^/bz/fenlei/f86/1.html  http://www.gexing.com/shaitu/t/%E5%B8%85%E5%93%A5 permanent;
+                rewrite ^/bz/fenlei/f101/1.html  http://www.gexing.com/shaitu/t/%E8%8B%B9%E6%9E%9C%E9%A3%8E permanent;
+                rewrite ^/bz/fenlei/f90/1.html  http://www.gexing.com/shaitu/t/%E6%89%8B%E7%BB%98 permanent;
+                rewrite ^/bz/fenlei/f102/1.html  http://www.gexing.com/shaitu/t/%E5%AE%BD%E5%B1%8F permanent;
+                rewrite ^/bz/fenlei/f84/1.html  http://www.gexing.com/shaitu/t/%E6%A4%8D%E7%89%A9 permanent;
+                rewrite ^/bz/fenlei/f91/1.html  http://www.gexing.com/shaitu/t/%E4%B8%89%E7%BB%B4 permanent;
+                rewrite ^/bz/fenlei/f94/1.html  http://www.gexing.com/shaitu/t/%E6%B8%B8%E6%88%8F permanent;
+                rewrite ^/bz/fenlei/f92/1.html  http://www.gexing.com/shaitu/t/%E4%BD%93%E8%82%B2 permanent;
+                rewrite ^/bz/fenlei/f95/1.html  http://www.gexing.com/shaitu/t/%E5%BB%BA%E7%AD%91 permanent;
+                rewrite ^/bz/fenlei/f96/1.html  http://www.gexing.com/shaitu/t/%E6%B1%BD%E8%BD%A6 permanent;
+                rewrite ^/bz/fenlei/f98/1.html  http://www.gexing.com/shaitu/t/%E5%AE%A4%E5%86%85 permanent;
+                rewrite ^/bz/fenlei/f99/1.html  http://www.gexing.com/shaitu/t/%E7%A1%AC%E4%BB%B6 permanent;
+                rewrite ^/bz/fenlei/f100/1.html  http://www.gexing.com/shaitu/t/%E5%BE%AE%E8%BD%AF permanent;
+
+
+                #晒图
+                rewrite  ^/tt/picshow.asp http://www.gexing.com/shaitu/$arg_id.html?  permanent;
+                #头像
+                rewrite  ^/(tx|TX)/picshow.asp http://www.gexing.com/qqtouxiang/$arg_id.html?  permanent;
+                #皮肤
+                rewrite ^/pifu/picshow.asp http://www.gexing.com/qqpifu/$arg_id.html? permanent;
+
+                rewrite ^/bq/$ http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8 permanent;
+                rewrite ^/bq$ http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f37/(\d+).html http://www.gexing.com/qqtouxiang/t/%E7%94%B7%E7%94%9F/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f31/(\d+).html http://www.gexing.com/qqtouxiang/t/%E5%A5%B3%E7%94%9F/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f31_2/(\d+).html http://www.gexing.com/qqtouxiang/t/%E4%B8%AA%E6%80%A7/50 permanent;
+
+                rewrite ^/(tx|TX)/fenlei/f34/(\d+).html http://www.gexing.com/qqtouxiang/t/%E6%83%85%E4%BE%A3/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f35/(\d+).html http://www.gexing.com/qqtouxiang/t/%E9%BB%91%E7%99%BD/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f33/(\d+).html http://www.gexing.com/qqtouxiang/t/%E5%8F%AF%E7%88%B1/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f36/(\d+).html http://www.gexing.com/qqtouxiang/t/%E5%8A%A8%E6%BC%AB/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f42/(\d+).html http://www.gexing.com/qqtouxiang/t/%E6%96%87%E5%AD%97/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f38/(\d+).html http://www.gexing.com/qqtouxiang/t/%E6%90%9E%E7%AC%91/2 permanent;
+                rewrite ^/(tx|TX)/fenlei/f50/(\d+).html http://www.gexing.com/qqtouxiang/2 permanent;           ##跳转
+                rewrite ^/(tx|TX)/fenlei/f58/(\d+).html http://www.gexing.com/qqtouxiang/hot7/2 permanent;
+                rewrite ^/(tx|TX)/new3/(\d+).html http://www.gexing.com/qqtouxiang/new/2 permanent;
+                rewrite ^/(tx|TX)/new2/(\d+).html http://www.gexing.com/qqtouxiang/2 permanent;
+                rewrite ^/(tx|TX)/new/(\d+).html http://www.gexing.com/qqtouxiang/t/%E7%94%B7%E7%94%9F/2 permanent;
+                rewrite ^/(tx|TX)/new5/(\d+).html http://www.gexing.com/qqtouxiang/t/%E5%A5%B3%E7%94%9F/2 permanent;
+                rewrite ^/(tx|TX)/new4/(\d+).html http://www.gexing.com/qqtouxiang/t/%E6%83%85%E4%BE%A3/2 permanent;
+                rewrite ^/(tx|TX)/(new6|paihang1)/1.html http://www.gexing.com/qqtouxiang/hot7/ permanent;
+                rewrite ^/(tx|TX)/(new6|paihang1)/(\d+).html http://www.gexing.com/qqtouxiang/hot7/2 permanent;
+                rewrite ^/tt/fenlei/f31/(\d+).html http://www.gexing.com/shaitu/2 permanent;           ##跳转
+                rewrite ^/tt/fenlei/f32/(\d+).html http://www.gexing.com/shaitu/t/%E6%84%8F%E5%A2%83/2 permanent;
+                rewrite ^/tt/fenlei/f35/(\d+).html http://www.gexing.com/shaitu/t/%E6%BD%AE%E6%B5%81/2 permanent;
+                rewrite ^/tt/fenlei/f37/(\d+).html http://www.gexing.com/qqpifu/2 permanent;           ##跳转
+                rewrite ^/tt/fenlei/f34/(\d+).html http://www.gexing.com/shaitu/t/%E4%B8%AA%E6%80%A7%E5%8F%A6%E7%B1%BB/2 permanent;
+                rewrite ^/tt/fenlei/f34_2/(\d+).html http://www.gexing.com/shaitu/t/%E5%8F%A6%E7%B1%BB/50 permanent;
+
+                rewrite ^/tt/fenlei/f40/(\d+).html http://www.gexing.com/shaitu/t/%E6%96%87%E5%AD%97/2 permanent;
+                rewrite ^/tt/fenlei/f39/(\d+).html http://www.gexing.com/shaitu/t/%E8%87%AA%E6%8B%8D/2 permanent;
+                rewrite ^/tt/fenlei/f36/(\d+).html http://www.gexing.com/shaitu/t/%E8%90%8C%E7%89%A9/2 permanent;
+                rewrite ^/tt/fenlei/f52/(\d+).html http://www.gexing.com/shaitu/hot/2 permanent;
+                rewrite ^/tt/(new|new2)/(\d+).html http://www.gexing.com/shaitu/new/2 permanent;
+                rewrite ^/tt/new3/(\d+).html http://www.gexing.com/shaitu/hot/2 permanent;
+                rewrite ^/tt/p1/(\d+).html http://www.gexing.com/shaitu/t/%E6%96%87%E5%AD%97/2 permanent;
+                rewrite ^/tt/p2/(\d+).html http://www.gexing.com/shaitu/t/%E6%BD%AE%E6%B5%81/2 permanent;
+                rewrite ^/tt/p3/(\d+).html http://www.gexing.com/shaitu/t/%E7%BA%A2%E4%BA%BA/2 permanent;
+                rewrite ^/tt/p4/(\d+).html http://www.gexing.com/shaitu/2 permanent;
+                rewrite ^/tt/fenlei/paihang1/(\d+).html http://www.gexing.com/shaitu/2 permanent;
+                rewrite ^/pifu/fenlei/f71/(\d+).html  http://www.gexing.com/qqpifu/t/%E4%BC%A4%E6%84%9F/2 permanent;
+                rewrite ^/pifu/fenlei/f72/(\d+).html  http://www.gexing.com/qqpifu/t/%E5%8F%AF%E7%88%B1/2 permanent;
+                rewrite ^/pifu/fenlei/f73/(\d+).html  http://www.gexing.com/pifu/2 permanent;
+                rewrite ^/pifu/fenlei/f74/(\d+).html  http://www.gexing.com/pifu/t/%E9%97%AA%E5%9B%BE/2 permanent;
+                rewrite ^/pifu/fenlei/f75/(\d+).html  http://www.gexing.com/fengmian/2 permanent;
+                rewrite ^/pifu/new1/(\d+).html  http://www.gexing.com/qqpifu/new/2 permanent;
+                rewrite ^/pifu/new2/(\d+).html  http://www.gexing.com/qqpifu/hot7/2 permanent;
+                rewrite ^/pifu/new3/(\d+).html  http://www.gexing.com/pifu/2 permanent;
+                rewrite ^/pifu/new4/(\d+).html  http://www.gexing.com/pifu/t/%E9%97%AA%E5%9B%BE/2 permanent;
+
+                rewrite ^/bz/fenlei/(f4|f88)/(\d+).html  http://www.gexing.com/shaitu/t/%E5%8D%A1%E9%80%9A/2 permanent;
+                rewrite ^/bz/fenlei/(f3|f85)/(\d+).html  http://www.gexing.com/shaitu/t/%E7%BE%8E%E5%A5%B3/2 permanent;
+                rewrite ^/bz/fenlei/(f5|f89)/(\d+).html  http://www.gexing.com/shaitu/t/%E5%B9%BF%E5%91%8A/2 permanent;
+                rewrite ^/bz/fenlei/(f6|f93)/(\d+).html  http://www.gexing.com/shaitu/t/%E7%94%B5%E5%BD%B1/2 permanent;
+                rewrite ^/bz/fenlei/(f7|f97)/(\d+).html  http://www.gexing.com/shaitu/t/%E7%BE%8E%E9%A3%9F/2 permanent;
+                rewrite ^/bz/fenlei/(f1|f80|f81|f82)/(\d+).html  http://www.gexing.com/shaitu/t/%E9%A3%8E%E6%99%AF/2 permanent;
+                rewrite ^/bz/fenlei/(f2|f83)/(\d+).html  http://www.gexing.com/shaitu/t/%E5%8A%A8%E7%89%A9/2 permanent;
+                rewrite ^/bz/fenlei/f8/(\d+).html  http://www.gexing.com/shaitu/t/%E7%94%B5%E8%84%91/2 permanent;
+                rewrite ^/bz/fenlei/(f10|f103|paihang1|paihang2|paihang5)/(\d+).html  http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8/2 permanent;
+                rewrite ^/bz/new/(\d+).html  http://www.gexing.com/shaitu/t/%E5%A3%81%E7%BA%B8/2 permanent;
+                rewrite ^/bz/fenlei/f87/(\d+).html  http://www.gexing.com/shaitu/t/%E5%8A%A8%E6%BC%AB/2 permanent;
+                rewrite ^/bz/fenlei/f86/(\d+).html  http://www.gexing.com/shaitu/t/%E5%B8%85%E5%93%A5/2 permanent;
+                rewrite ^/bz/fenlei/f101/(\d+).html  http://www.gexing.com/shaitu/t/%E8%8B%B9%E6%9E%9C%E9%A3%8E/2 permanent;
+                rewrite ^/bz/fenlei/f90/(\d+).html  http://www.gexing.com/shaitu/t/%E6%89%8B%E7%BB%98/2 permanent;
+                rewrite ^/bz/fenlei/f102/(\d+).html  http://www.gexing.com/shaitu/t/%E5%AE%BD%E5%B1%8F/2 permanent;
+                rewrite ^/bz/fenlei/f84/(\d+).html  http://www.gexing.com/shaitu/t/%E6%A4%8D%E7%89%A9/2 permanent;
+                rewrite ^/bz/fenlei/f91/(\d+).html  http://www.gexing.com/shaitu/t/%E4%B8%89%E7%BB%B4/2 permanent;
+                rewrite ^/bz/fenlei/f94/(\d+).html  http://www.gexing.com/shaitu/t/%E6%B8%B8%E6%88%8F/2 permanent;
+                rewrite ^/bz/fenlei/f92/(\d+).html  http://www.gexing.com/shaitu/t/%E4%BD%93%E8%82%B2/2 permanent;
+                rewrite ^/bz/fenlei/f95/(\d+).html  http://www.gexing.com/shaitu/t/%E5%BB%BA%E7%AD%91/2 permanent;
+                rewrite ^/bz/fenlei/f96/(\d+).html  http://www.gexing.com/shaitu/t/%E6%B1%BD%E8%BD%A6/2 permanent;
+                rewrite ^/bz/fenlei/f98/(\d+).html  http://www.gexing.com/shaitu/t/%E5%AE%A4%E5%86%85/2 permanent;
+                rewrite ^/bz/fenlei/f99/(\d+).html  http://www.gexing.com/shaitu/t/%E7%A1%AC%E4%BB%B6/2 permanent;
+                rewrite ^/bz/fenlei/f100/(\d+).html  http://www.gexing.com/shaitu/t/%E5%BE%AE%E8%BD%AF/2 permanent;
+
+        	rewrite ^/$ http://www.gexing.com permanent;
+                #rewrite ^/(.*)$ http://www.gexing.com/$1 permanent; //reponse 403
+        }
+    }
+
+
+####### (qm|wm|zl).qqgexing.com ################
+
+    server {
+        listen       <%= port %>;
+        server_name qm.qqgexing.com wm.qqgexing.com zl.qqgexing.com;
+            root   /data/www/htdocs/oldsite;
+            index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/www.qqgexing.com-access.log  main;
+        error_log  /data/www/logs/www.qqgexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        ## 日记
+        if ($host ~* 'zl.qqgexing.com' ) {
+        rewrite ^/d/(\d+).html$ http://www.gexing.com/riji/$1.html permanent;
+        rewrite ^/(.+)$ http://www.gexing.com/$1 permanent;
+        }
+        ## 签名
+        if ($host ~* 'qm.qqgexing.com' ) {
+        rewrite ^/d/(\d+).html$ http://www.gexing.com/qqqianming/$1.html permanent;
+        rewrite ^/(.+)$ http://www.gexing.com/$1 permanent;
+        }
+        ## 网名
+        if ($host ~* 'wm.qqgexing.com' ) {
+        rewrite ^/d/(\d+).html$ http://www.gexing.com/qqwangming/$1.html permanent;
+        rewrite ^/(.+)$ http://www.gexing.com/$1 permanent;
+        }
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+}
+    
+######### jic.gexing.com #############
+
+    server {
+        listen      <%= port %>; 
+        server_name jic.gexing.com source.jic.gexing.com jic2.qqgexing.com source.jic2.qqgexing.com jic.imggx.com source.jic.imggx.com;
+            root   /data/www/htdocs/jic.gexing.com;
+            index  favicon.ico index.html index.htm index.php;
+
+        #access_log  /data/www/logs/jic.gexing.com-access.log  main;
+        error_log  /data/www/logs/jic.gexing.com-error.log ;
+
+        if_modified_since off;
+        add_header Last-Modified "";
+        keepalive_timeout  6;
+
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~ \.(php|php5)?$ {
+            #fastcgi_pass   127.0.0.1:9000;
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+        location ~ \/favicon.ico$ {
+                expires 1d;
+        }
+        location /j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /i/ {
+                expires 3h;
+                concat on;
+                concat_max_files 20;
+        }
+        location /f/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        #z.gexing.com
+        location /z/c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /z/j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /z/i/ {
+                expires 3h;
+                concat on;
+                concat_max_files 20;
+        }
+        location /z/f/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /g/c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /g/j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+#jz
+       location /t/j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /t/c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /t/i/ {
+                expires 3h;
+                concat on;
+                concat_max_files 20;
+        }
+#edu
+	location /edu/c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /edu/j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+	location /edu/images/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /edu/1dui1/images/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /edu/1dui1/c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /edu/1dui1/j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /edu/college/c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /edu/college/j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /edu/college/images/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+#mobile
+        location /mobile/c/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+        location /mobile/j/ {
+                expires 365d;
+                concat on;
+                concat_max_files 20;
+        }
+   }    
+
+
+####### biz.gexing.com ################
+
+    server {
+        listen      <%= port %>; 
+        server_name biz.gexing.com source.biz.gexing.com;
+            root   /data/www/htdocs/biz.gexing.com;
+            index  favicon.ico index.html index.htm index.php;
+
+        #access_log  /data/www/logs/biz.gexing.com-access.log  main;
+        error_log  /data/www/logs/biz.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+	location / {
+                expires 365d;
+        }
+
+        location ~ \.(php|php5)?$ {
+            #fastcgi_pass   127.0.0.1:9000;
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+   }
+
+######### manage.gexing.com #######
+
+    server {
+        listen      <%= port %>; 
+        server_name manage.gexing.com;
+            root   /data/www/htdocs/manage.gexing.com;
+            index  index.html index.htm index.php;
+
+        #access_log  /data/www/logs/manage.gexing.com-access.log  main;
+        error_log  /data/www/logs/manage.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~ \.(php|php5)?$ {
+            #fastcgi_pass   127.0.0.1:9000;
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+   }
+
+########## sso ################
+
+
+    server {
+        listen       <%= port %>;
+        server_name sso.gexing.com;
+            root   /data/www/htdocs/sso.gexing.com;
+            index  index.html index.htm index.php;
+
+
+        access_log  /data/www/logs/sso.gexing.com-access.log  main;
+        error_log  /data/www/logs/sso.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+    }
+
+########## count ################
+
+    server {
+        listen       <%= port %>;
+        server_name count.gexing.com;
+            root   /data/www/htdocs/www.gexing.com/count;
+            index  index.html index.htm index.php;
+
+
+        #access_log  /data/www/logs/count.gexing.com-access.log  main;
+        error_log  /data/www/logs/count.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        keepalive_timeout 0;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+    }
+
+####### mobile.gexing.com ################
+
+    server {
+        listen      <%= port %>; 
+        server_name api.mobile.gexing.com *.mobile.gexing.com shouji.gexing.com;
+            root   /data/www/htdocs/mobile.gexing.com;
+            index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/shouji.gexing.com-access.log  main;
+        error_log  /data/www/logs/shouji.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+        location  /{
+            rewrite ^/(gx|jz|zy)$  http://shouji.gexing.com/$1/ permanent;
+            rewrite ^/(gx|jz|zy)/$ /index.php?action=$1 last;
+            rewrite ^/download/(gx|jz|share)/(.*)/(.*).apk$ http://shouji.gexing.com/download/$1/$3.apk last;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+   }
+
+
+####### ic.analytics.gexing.com ################
+
+    server {
+        listen      <%= port %>; 
+        server_name ic.analytics.gexing.com;
+            root   /data/www/htdocs/ic.analytics.gexing.com;
+            index  index.html index.htm index.php;
+
+       # access_log  /data/www/logs/ic.analytics.gexing.com-access.log  main;
+        error_log  /data/www/logs/ic.analytics.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+   }
+
+####### z.gexing.com ################
+
+    server {
+        listen      <%= port %>;
+        server_name z.gexing.com inner.z.gexing.com zone.gexing.com;
+        root   /data/www/htdocs/z.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/z.gexing.com-access.log  main;
+        error_log  /data/www/logs/z.gexing.com-error.log ;
+
+        error_page   404 /static/404.html;
+        error_page   500 502 503 504  /static/500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+        location /{
+                rewrite ^/bdsitemap.txt$ /bdsitemap.txt break;
+                rewrite ^/static/(.*) /static/$1 break;
+                rewrite ^/(.*) /index.php last;
+        }
+
+     }
+####### zmanager.gexing.com ################
+    server {
+        listen       <%= port %>;
+        server_name zmanager.gexing.com *.zmanager.gexing.com;
+        root   /data/www/htdocs/zmanager.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/zmanager.gexing.com-access.log  main;
+        error_log  /data/www/logs/zmanager.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~  /status/
+        {
+                access_log off;
+        }
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+        location /{
+                rewrite ^/src/(.*) /src/$1 break;
+                rewrite ^/(.*) /index.php last;
+        }
+    }
+####### xyx.gexing.com ################
+    server {
+        listen       <%= port %>;
+        server_name xyx.gexing.com *.xyx.gexing.com;
+        root   /data/www/htdocs/www.gexing.com;
+        index  game.php;
+
+        access_log  /data/www/logs/xyx.gexing.com-access.log  main;
+        error_log  /data/www/logs/xyx.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+#        location /{
+#                rewrite ^/(.*) /game.php last;
+#        }
+    }
+####### game.gexing.com ################
+    server {
+        listen       <%= port %>;
+        server_name game.gexing.com *.game.gexing.com;
+        root   /data/www/htdocs/game.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/game.gexing.com-access.log  main;
+        error_log  /data/www/logs/game.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+ 	location /{
+            rewrite ^/bdsitemap.txt$ /bdsitemap.txt break;
+            rewrite ^/static/(.*) /static/$1 break;
+            rewrite ^/(.*) /index.php last;
+        }
+    }
+############## xue.gexing.com ###############
+  server {
+        server_name xue.gexing.com;
+        listen      <%= port %>;
+        root   /data/www/htdocs/edu/xue.gexing.com;
+        index  index.html index.htm index.php;
+        set $yii_bootstrap "index.php";
+        charset utf-8;
+
+        access_log  /data/www/logs/xue.gexing.com-access.log  main;
+        error_log  /data/www/logs/xue.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location / {
+                index  index.html $yii_bootstrap;
+                try_files $uri $uri/ /$yii_bootstrap?$args;
+        }
+
+        location ~ ^/(protected|framework|themes/\w+/views) {
+                deny  all;
+        }
+
+        location ~ \.(js|css|png|jpg|gif|swf|ico|pdf|mov|fla|zip|rar)$ {
+                try_files $uri =404;
+        }
+
+        location ~ \.(php|php5)?$ {
+                fastcgi_split_path_info  ^(.+\.php)(.*)$;
+
+                set $fsn /$yii_bootstrap;
+                if (-f $document_root$fastcgi_script_name){
+                        set $fsn $fastcgi_script_name;
+                }
+                fastcgi_param  SCRIPT_FILENAME  $document_root$fsn;
+                fastcgi_param  PATH_INFO        $fastcgi_path_info;
+                fastcgi_param  PATH_TRANSLATED  $document_root$fsn;
+
+                fastcgi_pass   unix:/var/run/php-fpm.sock;
+                fastcgi_index  index.php;
+                #fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+                include        fastcgi.conf;
+        }
+
+        location ~ /\.ht {
+                deny  all;
+        }
+   }
+
+####### jz.gexing.com ################
+
+    server {
+        listen      <%= port %>;
+        server_name jz.gexing.com;
+        root   /data/www/htdocs/jz.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/jz.gexing.com-access.log  main;
+        error_log  /data/www/logs/jz.gexing.com-error.log ;
+
+        error_page   404 /static/404.html;
+        error_page   500 502 503 504  /static/500.html;
+
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+        location /{
+                rewrite ^/bdsitemap.txt$ /bdsitemap.txt break;
+                rewrite ^/static/(.*) /static/$1 break;
+                rewrite ^/(.*) /index.php last;
+        }
+
+   }
+
+####### jmanager.gexing.com ################
+    server {
+        listen      <%= port %>;
+        server_name jmanager.gexing.com;
+        root   /data/www/htdocs/jmanager.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/jmanager.gexing.com-access.log  main;
+        error_log  /data/www/logs/jmanager.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+
+        location /{
+                rewrite ^/src/(.*) /src/$1 break;
+                rewrite ^/(.*) /index.php last;
+        }
+
+   }
+
+####zuoye.gexing.com############################################################
+
+    server {
+        server_name zuoye.gexing.com;
+        listen      <%= port %>;
+        root   /data/www/htdocs/edu/zuoye.gexing.com;
+        index  index.html index.htm index.php;
+        set $yii_bootstrap "index.php";
+        charset utf-8;
+
+        access_log  /data/www/logs/zuoye.gexing.com-access.log  main;
+        error_log  /data/www/logs/zuoye.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location / {
+                index  index.html $yii_bootstrap;
+                try_files $uri $uri/ /$yii_bootstrap?$args;
+        }
+
+        location ~ ^/(protected|framework|themes/\w+/views) {
+                deny  all;
+        }
+       location ~ \.(js|css|png|jpg|gif|swf|ico|pdf|mov|fla|zip|rar)$ {
+                try_files $uri =404;
+        }
+
+        location ~ \.(php|php5)?$ {
+                fastcgi_split_path_info  ^(.+\.php)(.*)$;
+
+                set $fsn /$yii_bootstrap;
+                if (-f $document_root$fastcgi_script_name){
+                        set $fsn $fastcgi_script_name;
+                }
+                fastcgi_param  SCRIPT_FILENAME  $document_root$fsn;
+                fastcgi_param  PATH_INFO        $fastcgi_path_info;
+                fastcgi_param  PATH_TRANSLATED  $document_root$fsn;
+
+                fastcgi_pass   unix:/var/run/php-fpm.sock;
+                fastcgi_index  index.php;
+                #fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+                include        fastcgi.conf;
+        }
+       location ~ /\.ht {
+                deny  all;
+        }
+   }
+
+####www.1dui1.com############################################################
+    server {
+        server_name 1dui1.com www.1dui1.com 1dui1.gexing.com;
+        listen      <%= port %>;
+        root   /data/www/htdocs/edu/www.1dui1.com;
+        index  index.html index.htm index.php;
+        set $yii_bootstrap "index.php";
+        charset utf-8;
+        access_log  /data/www/logs/www.1dui1.com-access.log  main;
+        error_log  /data/www/logs/www.1dui1.com-error.log ;
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+	if ($host ~* '^1dui1.com') {
+        rewrite ^/(.*)$ http://www.1dui1.com/$1 permanent;
+        }
+        location / {
+                index  index.html $yii_bootstrap;
+                try_files $uri $uri/ /$yii_bootstrap?$args;
+        }
+        location ~ ^/(protected|framework|themes/\w+/views) {
+                deny  all;
+        }
+        location ~ \.(js|css|png|jpg|gif|swf|ico|pdf|mov|fla|zip|rar)$ {
+                try_files $uri =404;
+        }
+        location ~ \.(php|php5)?$ {
+                fastcgi_split_path_info  ^(.+\.php)(.*)$;
+                set $fsn /$yii_bootstrap;
+                if (-f $document_root$fastcgi_script_name){
+                        set $fsn $fastcgi_script_name;
+                }
+                fastcgi_param  SCRIPT_FILENAME  $document_root$fsn;
+                fastcgi_param  PATH_INFO        $fastcgi_path_info;
+                fastcgi_param  PATH_TRANSLATED  $document_root$fsn;
+                fastcgi_pass   unix:/var/run/php-fpm.sock;
+                fastcgi_index  index.php;
+                #fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+                include        fastcgi.conf;
+        }
+       location ~ /\.ht {
+                deny  all;
+        }
+   }
+
+########## dl.gexing.com ################
+    server {
+        listen       <%= port %>;
+        server_name dl.gexing.com;
+        root   /data/www/htdocs/dl.gexing.com;
+        index  index.html index.htm index.php;
+
+        access_log  /data/www/logs/dl.gexing.com-access.log  main;
+        error_log  /data/www/logs/dl.gexing.com-error.log ;
+
+        error_page   404  /404.html;
+        error_page   500 502 503 504  /500.html;
+
+        location ~ \.(php|php5)?$ {
+            fastcgi_pass   unix:/var/run/php-fpm.sock;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+            include        fastcgi.conf;
+        }
+    }
+    include /etc/nginx/conf.d/*;
+}

@@ -1,0 +1,115 @@
+
+backend backend_www
+    mode       http
+    contimeout 10000
+    srvtimeout 50000 
+    balance    source
+    hash-type  consistent
+    fullconn   100000
+    option httpchk HEAD /pmping
+    server  172.16.5.4:80    172.16.5.4:80 id 01 check cookie w01 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+#    server  172.16.5.12:80   172.16.5.12:80 id 03 check cookie w03 inter 2s rise 2 fall 5 weight 10 minconn 50 maxconn 50000
+    server  172.16.5.13:8080    172.16.5.13:8080 id 04 check cookie w04 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+    server  172.16.5.14:8080    172.16.5.14:8080 id 05 check cookie w05 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+
+backend backend_z
+    mode       http
+    contimeout 10000
+    srvtimeout 50000
+    balance    source
+    hash-type  consistent
+    fullconn   100000
+    option httpchk HEAD /pmping
+    server  172.16.5.4:80    172.16.5.4:80 id 01 check cookie w01 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+#    server  172.16.5.12:80   172.16.5.12:80 id 03 check cookie w03 inter 2s rise 2 fall 5 weight 10 minconn 50 maxconn 50000
+    server  172.16.5.13:8080    172.16.5.13:8080 id 04 check cookie w04 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+    server  172.16.5.14:8080    172.16.5.14:8080 id 05 check cookie w05 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+
+
+backend backend_game
+    mode       http
+    contimeout 10000
+    srvtimeout 50000
+    balance    source
+    hash-type  consistent
+    fullconn   60000
+    option httpchk HEAD /pmping
+    server  172.16.5.4:80    172.16.5.4:80 id 01 check cookie g01 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+#    server  172.16.5.12:80   172.16.5.12:80 id 03 check cookie g03 inter 2s rise 2 fall 5 weight 10 minconn 50 maxconn 50000
+    server  172.16.5.13:8080    172.16.5.13:8080 id 04 check cookie g04 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+    server  172.16.5.14:8080    172.16.5.14:8080 id 05 check cookie g05 inter 2s rise 2 fall 5 weight  10 minconn 50 maxconn 50000
+
+backend backend_jics
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    timeout http-keep-alive 3s
+    balance    uri
+    hash-type  consistent
+    option httpchk HEAD /nginx_status
+    server  172.16.5.4:80     172.16.5.4:80 id 01 check cookie js01 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.5.12:80     172.16.5.12:80 id 03 check cookie js03 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.5.13:8080     172.16.5.13:8080 id 04 check cookie js04 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.5.14:8080     172.16.5.14:8080 id 05 check cookie js05 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_biz
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    timeout http-keep-alive 3s
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.5.4:80    172.16.5.4:80 id 01 check  cookie biz01 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.5.12:80    172.16.5.12:80 id 03 check cookie biz03 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.5.13:8080     172.16.5.13:8080 id 04 check cookie biz04 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_mobile
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    timeout http-keep-alive 3s
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.5.4:80    172.16.5.4:80 id 01 check  cookie mobile01 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.5.12:80    172.16.5.12:80 id 03 check cookie mobile03 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.5.13:8080     172.16.5.13:8080 id 04 check cookie mobile04 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_analytics
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    timeout http-keep-alive 3s
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.5.4:80    172.16.5.4:80 id 01 check  cookie analytics01 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+#    server  172.16.5.12:80    172.16.5.12:80 id 03 check cookie analytics03 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.5.13:8080     172.16.5.13:8080 id 04 check cookie analytics04 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_dl
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    roundrobin
+    hash-type  consistent
+    option httpchk HEAD /pmping
+    server  172.16.5.4:80    172.16.5.4:80 id 01 check  cookie dl01 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    server  172.16.5.13:8080     172.16.5.13:8080 id 04 check cookie dl04 inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+
+backend backend_cache_image
+    mode       http
+    contimeout 5000
+    srvtimeout 50000
+    balance    uri
+    hash-type  consistent
+    option http-pretend-keepalive
+    timeout http-keep-alive 3s
+    option srvtcpka
+    option httpchk HEAD /touxiang/20120907/1316/50498346c817d_100x100.jpg HTTP/1.1\r\nHost:\ p1.gexing.com\r\nReferer:\ http://www.gexing.com
+    server  172.16.5.2:6081     172.16.5.2:6081  id 02 cookie img02 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 5
+    server  172.16.5.3:6081     172.16.5.3:6081  id 03 cookie img03 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 5
+    server  172.16.5.11:6081    172.16.5.11:6081  id 11 cookie img11 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 5
+    #server  172.16.5.13:6081   172.16.5.13:6081 id 13 cookie img13 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10
+    #server  172.16.5.14:6081   172.16.5.14:6081 id 14 cookie img14 check inter 2s downinter 5s slowstart 60s rise 2 fall 5 weight 10

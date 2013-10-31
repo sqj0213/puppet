@@ -1,0 +1,28 @@
+class rsyslog {
+        package {'rsyslog-5.8.10-2':
+                name    => 'rsyslog-5.8.10-2.el6.x86_64',
+                ensure  => 'installed',
+                provider=> 'yum'
+        }
+        file {'rsyslog.conf': 
+                ensure  => file,
+                path    => '/etc/rsyslog.conf',
+                source  => 'puppet:///modules/rsyslog/rsyslog.conf',
+                require => Package['rsyslog-5.8.10-2'],
+                mode   => 0644,
+                group  => 'root',
+                owner  => 'root'
+        }
+        service { 'rsyslog-service':
+                ensure          =>'running',
+                name            =>'rsyslog',
+                enable          => true,
+                subscribe       =>[File['rsyslog.conf']],
+                provider  => 'redhat', 
+                require   => [File['rsyslog.conf']],
+                start   => "/etc/init.d/rsyslog start",
+                stop    => "/etc/init.d/rsyslog stop",
+                restart => "/etc/init.d/rsyslog restart",
+                status  => "/etc/init.d/rsyslog status",
+        }
+}

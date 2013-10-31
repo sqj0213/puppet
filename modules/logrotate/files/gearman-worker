@@ -1,0 +1,14 @@
+/var/log/gearmanWorkerDaemon-access.log
+/var/log/gearmanWorkerDaemon-error.log
+{
+        daily
+        missingok
+        rotate 30
+        compress
+        dateext
+        delaycompress
+        notifempty
+        postrotate
+                cd /usr/home/pro/scripts/gearman_convert_worker && python ./gearman_worker.py restart >/dev/null 2>&1 || python ./gearman_worker.py start >/dev/null 2>&1
+        endscript
+}

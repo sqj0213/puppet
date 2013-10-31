@@ -1,0 +1,99 @@
+127.0.0.1    localhost localhost.localdomain
+
+###BeiJing Host 2013-7-17 ###
+# Lvs
+172.16.1.2    leo-bj2 leo-bj2.internal.gexing.com
+172.16.1.3    leo-bj3 leo-bj3.internal.gexing.com
+172.16.2.21   leo-bj21 leo-bj21.internal.gexing.com
+172.16.2.22   leo-bj22 leo-bj22.internal.gexing.com
+# Redis
+172.16.2.4    aries-bj4 aries-bj4.internal.gexing.com 
+172.16.2.5    aries-bj5 aries-bj5.internal.gexing.com
+172.16.2.6    aries-bj6 aries-bj6.internal.gexing.com
+172.16.2.7    aries-bj7 aries-bj7.internal.gexing.com
+# MySQL
+172.16.2.8    virgo-bj8 virgo-bj8.internal.gexing.com
+172.16.2.9    virgo-bj9 virgo-bj9.internal.gexing.com
+172.16.2.12   virgo-bj12 virgo-bj12.internal.gexing.com
+172.16.2.16   virgo-bj16 virgo-bj16.internal.gexing.com 
+172.16.2.15   virgo-bj15 virgo-bj15.internal.gexing.com
+172.16.2.25   virgo-bj25 virgo-bj25.internal.gexing.com
+# File
+172.16.2.10   taurus-bj10 taurus-bj10.internal.gexing.com
+172.16.2.11   taurus-bj11 taurus-bj11.internal.gexing.com
+172.16.2.19   taurus-bj19 taurus-bj19.internal.gexing.com
+172.16.2.20   taurus-bj20 taurus-bj20.internal.gexing.com sass.internal.gexing.com
+# Manger
+172.16.2.13   libra-bj13 libra-bj13.internal.gexing.com
+123.103.21.138	webtask.gexing.com
+172.16.2.14   virgo-bj14 virgo-bj14.internal.gexing.com master.internal.gexing.com master
+# sso count
+172.16.2.17   pisces-bj17 pisces-bj17.internal.gexing.com
+172.16.2.18   pisces-bj18 pisces-bj18.internal.gexing.com
+# www
+172.16.2.23   cancer-bj23 cancer-bj23.internal.gexing.com
+172.16.2.24   cancer-bj24 cancer-bj24.internal.gexing.com
+# pic.upload.z.gexing.com
+123.103.21.144 pic.upload.z.gexing.com
+
+###TangShan Host 2012-7-17 ###
+# Lvs + Cache
+172.16.5.2    leo-ts2 leo-ts2.internal.gexing.com
+172.16.5.3    leo-ts3 leo-ts3.internal.gexing.com
+172.16.5.11    leo-ts11 leo-ts11.internal.gexing.com
+# WWW
+172.16.6.4    cancer-ts4 cancer-ts4.internal.gexing.com
+172.16.6.13   cancer-ts13 cancer-ts13.internal.gexing.com
+172.16.6.14   cancer-ts14 cancer-ts14.internal.gexing.com
+# Redis
+172.16.6.5    aries-ts5 aries-ts5.internal.gexing.com
+172.16.6.6    aries-ts6 aries-ts6.internal.gexing.com
+172.16.6.7    aries-ts7 aries-ts7.internal.gexing.com
+172.16.6.8    aries-ts8 aries-ts8.internal.gexing.com
+# MySQL
+172.16.6.9    virgo-ts9 virgo-ts9.internal.gexing.com
+172.16.6.10   virgo-ts10 virgo-ts10.internal.gexing.com
+# Rsyslog
+172.16.6.12   cancer-ts12 cancer-ts12.internal.gexing.com
+
+###HuZhou Host 2012-7-17 ###
+# Lvs + Cache
+172.16.3.2    leo-hz2 leo-hz2.internal.gexing.com
+172.16.3.3    leo-hz3 leo-hz3.internal.gexing.com
+172.16.3.18   leo-hz18 leo-hz18.internal.gexing.com
+172.16.3.19   leo-hz19 leo-hz19.internal.gexing.com
+172.16.3.15   leo-hz15 leo-hz15.internal.gexing.com
+172.16.4.14   leo-hz14 leo-hz14.internal.gexing.com
+# WWW
+172.16.3.4    cancer-hz4 cancer-hz4.internal.gexing.com
+172.16.4.5    cancer-hz5 cancer-hz5.internal.gexing.com
+172.16.4.12   cancer-hz12 cancer-hz12.internal.gexing.com
+172.16.4.13   cancer-hz13 cancer-hz13.internal.gexing.com
+172.16.4.16   cancer-hz16 cancer-hz16.internal.gexing.com
+172.16.4.17   cancer-hz17 cancer-hz17.internal.gexing.com
+172.16.4.20   cancer-hz20 cancer-hz20.internal.gexing.com
+# Redis
+172.16.4.6    aries-hz6 aries-hz6.internal.gexing.com
+172.16.4.7    aries-hz7 aries-hz7.internal.gexing.com
+172.16.4.8    aries-hz8 aries-hz8.internal.gexing.com
+172.16.4.9    aries-hz9 aries-hz9.internal.gexing.com
+# MySQL
+172.16.4.10   virgo-hz10 virgo-hz10.internal.gexing.com
+172.16.4.11   virgo-hz11 virgo-hz11.internal.gexing.com
+
+# BD
+121.18.211.66 scorpio-bd66 scorpio-bd66.internal.gexing.com
+121.18.211.69 scorpio-bd69 scorpio-bd69.internal.gexing.com
+
+# Resyslog
+211.154.255.103 hadoop1 passport
+211.154.255.101 hadoop2 mdb
+
+# QQmcc
+122.225.100.25 varnish_25 varnish_25.qqmcc.com
+122.225.100.26 file_26 file_26.qqmcc.com
+122.225.100.27 mysql_27 mysql_27.qqmcc.com
+122.225.100.28 varnish_28 varnish_28.qqmcc.com
+122.225.100.29 xyx_29 xyx_29.gexing.com
+60.12.104.102 www_102 www_102.qqmcc.com
+60.12.104.103 varnish_103 varnish_103.qqmcc.com

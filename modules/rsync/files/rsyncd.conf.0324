@@ -1,0 +1,150 @@
+uid=root
+gid=root
+use chroot = yes
+read only = yes
+list = yes
+hosts allow = 124.205.20.174 172.16.2.10 123.103.21.136 123.103.21.137 172.16.2.11 172.16.2.13
+max connections = 30
+log file = /var/log/rsyncd.log
+pid file = /var/run/rsyncd.pid
+lock file = /var/run/rsyncd.lock
+
+[www_gexing_com]
+path = /data/www/htdocs/www.gexing.com
+read only = no
+uid = www
+gid = www
+
+[www_xinqing_com]
+path = /data/www/htdocs/www.xinqing.com
+read only = no
+uid = www
+gid = www
+
+[jic_gexing_com]
+path = /data/www/htdocs/jic.gexing.com
+read only = no
+uid = www
+gid = www
+
+[abaca]
+path = /data/www/htdocs/Abaca
+read only = no
+uid = www
+gid = www
+
+[manage_gexing_com]
+path = /data/www/htdocs/manage.gexing.com
+read only = no
+uid = www
+gid = www
+
+[config]
+path = /data/www/htdocs/_CONFIG
+read only = no
+uid = www
+gid = www
+
+[nginx]
+path = /opt/nginx/conf/
+read only = no
+uid = www
+gid = www
+
+[biz.gexing.com]
+path = /data/www/htdocs/biz.gexing.com
+read only = no
+uid = www
+gid = www
+
+[mobile.gexing.com]
+path = /data/www/htdocs/mobile.gexing.com
+read only = no
+uid = www
+gid = www
+
+[ic.analytics.gexing.com]
+path = /data/www/htdocs/ic.analytics.gexing.com
+read only = no
+uid = www
+gid = www
+
+[AbacaNg]
+path = /data/www/htdocs/AbacaNg
+read only = no
+uid = www
+gid = www
+
+[z.gexing.com]
+path = /data/www/htdocs/z.gexing.com
+read only = no
+uid = www
+gid = www
+
+[game.gexing.com]
+path = /data/www/htdocs/game.gexing.com
+read only = no
+uid = www
+gid = www
+ 
+[edu]
+path = /data/www/htdocs/edu
+read only = no
+uid = www
+gid = www
+
+[search.gexing.com]
+path = /data/www/htdocs/search.gexing.com
+read only = no
+uid = www
+gid = www
+
+[pp.api.gexing.com]
+path = /data/www/htdocs/pp.api.gexing.com
+read only = no
+uid = www
+gid = www
+
+[zmanager.gexing.com]
+path = /data/www/htdocs/zmanager.gexing.com
+read only = no
+uid = www
+gid = www
+
+[gxsso]
+path = /data/www/htdocs/sso.gexing.com
+read only = no
+uid = www
+gid = www
+
+[count_gexing_com]
+path = /data/www/htdocs/count.gexing.com
+read only = no
+uid = www
+gid = www
+
+[pic_upload_gexing_com]
+path = /data/www/htdocs/pic.upload.gexing.com
+read only = no
+uid = www
+gid = www
+
+[photo.gexing.com]
+path = /data/www/htdocs/photo.gexing.com
+read only = no
+uid = www
+gid = www
+
+[xyx.gexing.com]
+path = /data/www/htdocs/xyx.gexing.com
+read only = no
+uid = www
+gid = www
+
+[montodo]
+path = /usr/local/mon_server/todo/
+read only = no
+
+[monlog]
+path = /usr/local/mon_server
+read only = no

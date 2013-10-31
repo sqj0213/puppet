@@ -1,0 +1,14 @@
+/data/www/logs/php*.log {
+    	daily
+    	missingok
+    	rotate 30
+    	compress
+    	dateext
+    	delaycompress
+   	notifempty
+    	create 640 www www
+    	sharedscripts
+    	postrotate
+		/bin/kill -SIGUSR1 `cat /var/run/php-fpm/php-fpm.pid 2>/dev/null` 2>/dev/null || true
+    	endscript
+}
